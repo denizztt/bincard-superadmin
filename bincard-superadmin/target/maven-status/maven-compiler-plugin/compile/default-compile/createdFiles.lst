@@ -1,0 +1,12 @@
+com\bincard\bincard_admin\LoginResponse.class
+com\bincard\bincard_admin\TokenDTO.class
+module-info.class
+com\bincard\bincard_admin\AdminLoginFX.class
+com\bincard\bincard_admin\AdminSignupFX.class
+com\bincard\bincard_admin\ApiClientFX.class
+com\bincard\bincard_admin\AdminLoginFX$1.class
+com\bincard\bincard_admin\TokenType.class
+com\bincard\bincard_admin\AdminDashboardFX.class
+com\bincard\bincard_admin\HelloApplication.class
+com\bincard\bincard_admin\TokenResponse.class
+com\bincard\bincard_admin\MainMenuFX.class
