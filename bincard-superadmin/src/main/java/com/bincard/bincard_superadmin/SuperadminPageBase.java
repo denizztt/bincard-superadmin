@@ -57,21 +57,33 @@ public abstract class SuperadminPageBase {
         stage.setScene(scene);
         stage.setTitle(pageTitle + " - Bincard Superadmin");
         stage.setResizable(true);
+        
+        // Tam ekran modunda aç
+        stage.setMaximized(true);
+        stage.setFullScreenExitHint("Tam ekrandan çıkmak için ESC tuşuna basın");
+        stage.setFullScreen(true);
     }
     
     /**
      * Header bölümünü oluşturur
      */
+    // Soft renk paleti için renkler
+    protected final String mainColor = "#5d5c61"; // Ana gri renk
+    protected final String accentColor1 = "#379683"; // Yumuşak yeşil
+    protected final String accentColor2 = "#7395ae"; // Yumuşak mavi
+    protected final String accentColor3 = "#557a95"; // Koyu mavi
+    protected final String accentColor4 = "#b1a296"; // Yumuşak bej
+    
     protected HBox createHeader() {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(15, 25, 15, 25));
         header.setSpacing(20);
-        header.setStyle("-fx-background-color: linear-gradient(to right, #4e54c8, #8f94fb); -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);");
+        header.setStyle("-fx-background-color: " + mainColor + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);");
         
         // Ana sayfaya dönüş butonu
         Button homeButton = new Button("Ana Sayfa");
-        homeButton.setStyle("-fx-background-color: #3F3D8F; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;");
+        homeButton.setStyle("-fx-background-color: " + accentColor2 + "; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;");
         homeButton.setOnAction(e -> goToHomePage());
         
         // Sayfa başlığı
@@ -107,7 +119,7 @@ public abstract class SuperadminPageBase {
         HBox footer = new HBox();
         footer.setAlignment(Pos.CENTER);
         footer.setPadding(new Insets(15));
-        footer.setStyle("-fx-background-color: #4e54c8;");
+        footer.setStyle("-fx-background-color: " + mainColor + ";");
         
         Label footerText = new Label("© 2025 Bincard Superadmin Panel | Tüm Hakları Saklıdır");
         footerText.setFont(Font.font("Montserrat", FontWeight.NORMAL, 14));
