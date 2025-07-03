@@ -12,7 +12,7 @@ import javafx.stage.Stage;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-public class DriversPage extends AdminPageBase {
+public class DriversPage extends SuperadminPageBase {
 
     // Örnek şoför verileri (gerçek uygulamada API'den gelecek)
     private static class Driver {

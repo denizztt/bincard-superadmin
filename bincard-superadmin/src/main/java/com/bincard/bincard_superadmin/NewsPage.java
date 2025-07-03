@@ -42,7 +42,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-public class NewsPage extends AdminPageBase {
+public class NewsPage extends SuperadminPageBase {
 
     // Haber verileri için iç sınıf
     // AdminNewsDTO modeline uygun iç sınıf

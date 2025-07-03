@@ -12,6 +12,66 @@ import java.time.format.DateTimeFormatter;
 public class ApiClientFX {
     private static final String BASE_URL = "http://localhost:8080/v1/api";
 
+    public static LoginResponse signup(String name, String surname, String telephone, String password, String email) throws IOException {
+        URL url = new URL(BASE_URL + "/auth/superadmin-signup");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
+
+        // Sınır kontrollü değerler
+        String ip = getPublicIpAddress();
+        if (ip.length() > 50) ip = ip.substring(0, 50);
+
+        String deviceInfo = getDeviceInfo();
+        if (deviceInfo.length() > 50) deviceInfo = deviceInfo.substring(0, 50);
+
+        String appVersion = "1.0";
+        if (appVersion.length() > 20) appVersion = appVersion.substring(0, 20);
+
+        String platform = "DESKTOP";
+        if (platform.length() > 20) platform = platform.substring(0, 20);
+
+        String jsonInput = String.format(
+                "{\"name\":\"%s\",\"surname\":\"%s\",\"telephone\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"ipAddress\":\"%s\",\"deviceInfo\":\"%s\",\"appVersion\":\"%s\",\"platform\":\"%s\"}",
+                name, surname, telephone, password, email, ip, deviceInfo, appVersion, platform
+        );
+
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = jsonInput.getBytes("utf-8");
+            os.write(input, 0, input.length);
+        }
+
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 || code == 201 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+
+            String resp = response.toString();
+            System.out.println("Signup Response: " + resp);
+
+            if (code == 200 || code == 201) {
+                try {
+                    boolean success = resp.contains("\"success\":true");
+                    String message = resp.split("\"message\":\"")[1].split("\"")[0];
+                    return new LoginResponse(success, message);
+                } catch (Exception e) {
+                    throw new IOException("Invalid response format: " + resp);
+                }
+            } else {
+                String errorMsg = extractJsonMessage(resp);
+                throw new IOException(errorMsg != null ? errorMsg : "Signup failed: " + code + " - " + resp);
+            }
+        }
+    }
+
     public static LoginResponse login(String telephone, String password) throws IOException {
         URL url = new URL(BASE_URL + "/auth/superadmin-login");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -19,9 +79,16 @@ public class ApiClientFX {
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setDoOutput(true);
 
+        // Sınır kontrollü değerler
+        String ip = getPublicIpAddress();
+        if (ip.length() > 50) ip = ip.substring(0, 50);
+        
+        String deviceInfo = getDeviceInfo();
+        if (deviceInfo.length() > 50) deviceInfo = deviceInfo.substring(0, 50);
+        
         String jsonInput = String.format(
                 "{\"telephone\":\"%s\",\"password\":\"%s\",\"ipAddress\":\"%s\",\"deviceInfo\":\"%s\",\"appVersion\":\"1.0\",\"platform\":\"DESKTOP\"}",
-                telephone, password, getPublicIpAddress(), "Desktop-Admin-Panel"
+                telephone, password, ip, deviceInfo
         );
 
         try (OutputStream os = conn.getOutputStream()) {
@@ -69,7 +136,7 @@ public class ApiClientFX {
         String ip = getPublicIpAddress();
         if (ip.length() > 50) ip = ip.substring(0, 50);
     
-        String deviceInfo = "Desktop";
+        String deviceInfo = getDeviceInfo();
         if (deviceInfo.length() > 50) deviceInfo = deviceInfo.substring(0, 50);
     
         String appVersion = "1.0";
@@ -142,6 +209,16 @@ public class ApiClientFX {
                             refreshDeviceInfo,
                             TokenType.REFRESH
                     );
+                    
+                    // Token'ları güvenli bir şekilde sakla
+                    try {
+                        TokenSecureStorage.storeTokens(accessTokenDTO, refreshTokenDTO);
+                        System.out.println("Token'lar güvenli bir şekilde saklandı.");
+                    } catch (Exception e) {
+                        System.err.println("Token'lar saklanırken bir hata oluştu: " + e.getMessage());
+                        e.printStackTrace();
+                        // Hata durumunda bile işleme devam et, kritik bir hata değil
+                    }
     
                     return new TokenResponse(accessTokenDTO, refreshTokenDTO);
                 } catch (Exception e) {
@@ -225,6 +302,39 @@ public class ApiClientFX {
         } catch (Exception e) {
             return "127.0.0.1";
         }
+    }
+    
+    /**
+     * Cihaz bilgilerini otomatik olarak toplayan metot.
+     * İşletim sistemi, Java versiyonu ve ekran çözünürlüğü gibi bilgileri içerir.
+     */
+    public static String getDeviceInfo() {
+        StringBuilder deviceInfo = new StringBuilder();
+        
+        // İşletim sistemi bilgileri
+        deviceInfo.append("OS: ").append(System.getProperty("os.name"))
+                 .append(" ").append(System.getProperty("os.version"))
+                 .append(", Arch: ").append(System.getProperty("os.arch"));
+                 
+        // Java versiyonu
+        deviceInfo.append(", Java: ").append(System.getProperty("java.version"));
+        
+        // Kullanıcı bilgileri
+        deviceInfo.append(", User: ").append(System.getProperty("user.name"));
+        
+        // JVM bilgileri
+        deviceInfo.append(", JVM: ").append(System.getProperty("java.vm.name"));
+        
+        // Hostname
+        try {
+            deviceInfo.append(", Host: ").append(java.net.InetAddress.getLocalHost().getHostName());
+        } catch (Exception e) {
+            // Hostname alınamadıysa, devam et
+        }
+        
+        // Maksimum uzunluk kontrolü
+        String result = deviceInfo.toString();
+        return result.length() > 50 ? result.substring(0, 50) : result;
     }
     
     private static String extractNestedValue(String json, String parentKey, String childKey) {
@@ -580,4 +690,84 @@ public class ApiClientFX {
         }
         return null;
     }
-} 
+    
+    /**
+     * Kayıtlı token'ları diskten okuyarak yeni TokenDTO nesneleri oluşturur
+     * 
+     * @return TokenResponse nesnesi, eğer token'lar bulunamazsa veya geçerli değilse null
+     */
+    public static TokenResponse getSavedTokens() {
+        try {
+            // Şifreli token'ları diskten oku
+            TokenSecureStorage.TokenPair tokenPair = TokenSecureStorage.retrieveTokens();
+            if (tokenPair == null) {
+                System.out.println("Kaydedilmiş token bulunamadı.");
+                return null;
+            }
+            
+            // Süresi dolmuş mu kontrol et
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime accessExpiry = LocalDateTime.parse(tokenPair.getAccessExpiry());
+            
+            if (now.isAfter(accessExpiry)) {
+                System.out.println("Access token süresi dolmuş. Yenileme gerekli.");
+                
+                // Refresh token ile yenilemeyi dene
+                try {
+                    TokenDTO newAccessToken = refreshToken(tokenPair.getRefreshToken());
+                    
+                    // Yeni tokenları sakla (refresh token değişmediği için eski refresh token'ı kullan)
+                    LocalDateTime refreshExpiry = LocalDateTime.parse(tokenPair.getRefreshExpiry());
+                    TokenDTO refreshTokenDTO = new TokenDTO(
+                            tokenPair.getRefreshToken(),
+                            now.minusHours(1), // Tam olmayan issuedAt
+                            refreshExpiry,
+                            now,
+                            getPublicIpAddress(),
+                            getDeviceInfo(),
+                            TokenType.REFRESH
+                    );
+                    
+                    // Yeni token'ları kaydet
+                    TokenSecureStorage.storeTokens(newAccessToken, refreshTokenDTO);
+                    
+                    return new TokenResponse(newAccessToken, refreshTokenDTO);
+                } catch (Exception e) {
+                    System.err.println("Token yenileme hatası: " + e.getMessage());
+                    // Yenileme başarısız olursa, eski token'ları sil
+                    TokenSecureStorage.clearTokens();
+                    return null;
+                }
+            } else {
+                // Token'lar hala geçerli, DTO nesneleri oluştur
+                LocalDateTime refreshExpiry = LocalDateTime.parse(tokenPair.getRefreshExpiry());
+                
+                TokenDTO accessTokenDTO = new TokenDTO(
+                        tokenPair.getAccessToken(),
+                        now.minusMinutes(5), // Tam olmayan issuedAt
+                        accessExpiry,
+                        now,
+                        getPublicIpAddress(),
+                        getDeviceInfo(),
+                        TokenType.ACCESS
+                );
+                
+                TokenDTO refreshTokenDTO = new TokenDTO(
+                        tokenPair.getRefreshToken(),
+                        now.minusHours(1), // Tam olmayan issuedAt
+                        refreshExpiry,
+                        now,
+                        getPublicIpAddress(),
+                        getDeviceInfo(),
+                        TokenType.REFRESH
+                );
+                
+                return new TokenResponse(accessTokenDTO, refreshTokenDTO);
+            }
+        } catch (Exception e) {
+            System.err.println("Token'lar okunurken bir hata oluştu: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+}

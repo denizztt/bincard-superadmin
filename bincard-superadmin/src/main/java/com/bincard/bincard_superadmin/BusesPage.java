@@ -19,7 +19,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class BusesPage extends AdminPageBase {
+public class BusesPage extends SuperadminPageBase {
     
     // Örnek otobüs verileri (gerçek uygulamada API'den gelecek)
     private static class Bus {
