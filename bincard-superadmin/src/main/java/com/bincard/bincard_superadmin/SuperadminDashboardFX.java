@@ -23,6 +23,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// İkon destekleri için import
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
+
 public class SuperadminDashboardFX {
     private Stage stage;
     private TokenDTO accessToken;
@@ -31,11 +35,11 @@ public class SuperadminDashboardFX {
     private List<MenuItem> menuItems = new ArrayList<>();
     
     // Soft renk paleti için renkler - SubMenu ve başlıklar için kullanılıyor
-    private final String mainColor = "#3a4750"; // Daha koyu, şık bir renk - Sidebar arkaplanı için kullanılıyor
-    private final String accentColor1 = "#379683"; // Yumuşak yeşil
-    private final String accentColor2 = "#7395ae"; // Yumuşak mavi
-    private final String accentColor3 = "#557a95"; // Koyu mavi
-    private final String accentColor4 = "#b1a296"; // Yumuşak bej
+    private final String mainColor = "#607d8b"; // Daha açık mavi-gri ton - Sidebar arkaplanı için kullanılıyor
+    private final String accentColor1 = "#4caf50"; // Yumuşak yeşil
+    private final String accentColor2 = "#64b5f6"; // Canlı mavi
+    private final String accentColor3 = "#5c6bc0"; // Indigo tonu
+    private final String accentColor4 = "#ffb74d"; // Sıcak amber rengi
     
     // Alt menülerin görünürlük durumları
     private Map<String, VBox> subMenuContainers = new HashMap<>();
@@ -47,58 +51,58 @@ public class SuperadminDashboardFX {
         // Tüm menü öğelerini oluştur
         
         // Admin Onayları (alt menü olmadan)
-        MenuItem approvals = new MenuItem("Admin Onayları", accentColor1, "AdminApprovals");
+        MenuItem approvals = new MenuItem("Admin Onayları", accentColor1, FontAwesomeSolid.SHIELD_ALT, "AdminApprovals");
         
         // Duraklar menüsü
-        MenuItem stopsMenu = new MenuItem("Duraklar", accentColor3);
-        stopsMenu.addSubItem(new MenuItem("Durak Ekle", accentColor3, "StopAdd"));
-        stopsMenu.addSubItem(new MenuItem("Durakları Görüntüle", accentColor3, "StopsList"));
-        stopsMenu.addSubItem(new MenuItem("Durak Düzenle", accentColor3, "StopEdit"));
-        stopsMenu.addSubItem(new MenuItem("Durak Sil", accentColor3, "StopDelete"));
+        MenuItem stopsMenu = new MenuItem("Duraklar", accentColor3, FontAwesomeSolid.BUS_ALT);
+        stopsMenu.addSubItem(new MenuItem("Durak Ekle", accentColor3, FontAwesomeSolid.PLUS_CIRCLE, "StopAdd"));
+        stopsMenu.addSubItem(new MenuItem("Durakları Görüntüle", accentColor3, FontAwesomeSolid.LIST, "StopsList"));
+        stopsMenu.addSubItem(new MenuItem("Durak Düzenle", accentColor3, FontAwesomeSolid.EDIT, "StopEdit"));
+        stopsMenu.addSubItem(new MenuItem("Durak Sil", accentColor3, FontAwesomeSolid.TRASH_ALT, "StopDelete"));
         
         // Haberler menüsü
-        MenuItem newsMenu = new MenuItem("Haberler", accentColor3);
-        newsMenu.addSubItem(new MenuItem("Haber Ekle", accentColor3, "NewsAdd"));
-        newsMenu.addSubItem(new MenuItem("Haberleri Görüntüle", accentColor3, "NewsList"));
-        newsMenu.addSubItem(new MenuItem("Haber Düzenle", accentColor3, "NewsEdit"));
-        newsMenu.addSubItem(new MenuItem("Haber Sil", accentColor3, "NewsDelete"));
+        MenuItem newsMenu = new MenuItem("Haberler", accentColor3, FontAwesomeSolid.NEWSPAPER);
+        newsMenu.addSubItem(new MenuItem("Haber Ekle", accentColor3, FontAwesomeSolid.PLUS_CIRCLE, "NewsAdd"));
+        newsMenu.addSubItem(new MenuItem("Haberleri Görüntüle", accentColor3, FontAwesomeSolid.LIST, "NewsList"));
+        newsMenu.addSubItem(new MenuItem("Haber Düzenle", accentColor3, FontAwesomeSolid.EDIT, "NewsEdit"));
+        newsMenu.addSubItem(new MenuItem("Haber Sil", accentColor3, FontAwesomeSolid.TRASH_ALT, "NewsDelete"));
         
         // İstatistikler
-        MenuItem stats = new MenuItem("İstatistikler", accentColor3, "Statistics");
+        MenuItem stats = new MenuItem("İstatistikler", accentColor3, FontAwesomeSolid.CHART_BAR, "Statistics");
         
         // Kullanıcılar menüsü
-        MenuItem usersMenu = new MenuItem("Kullanıcılar", accentColor4);
-        usersMenu.addSubItem(new MenuItem("Kullanıcı Ekle", accentColor4, "UserAdd"));
-        usersMenu.addSubItem(new MenuItem("Kullanıcıları Görüntüle", accentColor4, "UsersList"));
-        usersMenu.addSubItem(new MenuItem("Kullanıcı Düzenle", accentColor4, "UserEdit"));
-        usersMenu.addSubItem(new MenuItem("Kullanıcı Sil", accentColor4, "UserDelete"));
+        MenuItem usersMenu = new MenuItem("Kullanıcılar", accentColor4, FontAwesomeSolid.USERS);
+        usersMenu.addSubItem(new MenuItem("Kullanıcı Ekle", accentColor4, FontAwesomeSolid.USER_PLUS, "UserAdd"));
+        usersMenu.addSubItem(new MenuItem("Kullanıcıları Görüntüle", accentColor4, FontAwesomeSolid.LIST, "UsersList"));
+        usersMenu.addSubItem(new MenuItem("Kullanıcı Düzenle", accentColor4, FontAwesomeSolid.USER_EDIT, "UserEdit"));
+        usersMenu.addSubItem(new MenuItem("Kullanıcı Sil", accentColor4, FontAwesomeSolid.USER_MINUS, "UserDelete"));
         
         // Otobüs Rotaları menüsü
-        MenuItem routesMenu = new MenuItem("Otobüs Rotaları", accentColor2);
-        routesMenu.addSubItem(new MenuItem("Rota Ekle", accentColor2, "RouteAdd"));
-        routesMenu.addSubItem(new MenuItem("Rotaları Görüntüle", accentColor2, "RoutesList"));
-        routesMenu.addSubItem(new MenuItem("Rota Düzenle", accentColor2, "RouteEdit"));
-        routesMenu.addSubItem(new MenuItem("Rota Sil", accentColor2, "RouteDelete"));
+        MenuItem routesMenu = new MenuItem("Otobüs Rotaları", accentColor2, FontAwesomeSolid.ROUTE);
+        routesMenu.addSubItem(new MenuItem("Rota Ekle", accentColor2, FontAwesomeSolid.PLUS_CIRCLE, "RouteAdd"));
+        routesMenu.addSubItem(new MenuItem("Rotaları Görüntüle", accentColor2, FontAwesomeSolid.LIST, "RoutesList"));
+        routesMenu.addSubItem(new MenuItem("Rota Düzenle", accentColor2, FontAwesomeSolid.EDIT, "RouteEdit"));
+        routesMenu.addSubItem(new MenuItem("Rota Sil", accentColor2, FontAwesomeSolid.TRASH_ALT, "RouteDelete"));
         
         // Otobüsler menüsü
-        MenuItem busesMenu = new MenuItem("Otobüsler", accentColor1);
-        busesMenu.addSubItem(new MenuItem("Otobüs Ekle", accentColor1, "BusAdd"));
-        busesMenu.addSubItem(new MenuItem("Otobüsleri Görüntüle", accentColor1, "BusesList"));
-        busesMenu.addSubItem(new MenuItem("Otobüs Düzenle", accentColor1, "BusEdit"));
-        busesMenu.addSubItem(new MenuItem("Otobüs Sil", accentColor1, "BusDelete"));
+        MenuItem busesMenu = new MenuItem("Otobüsler", accentColor1, FontAwesomeSolid.BUS);
+        busesMenu.addSubItem(new MenuItem("Otobüs Ekle", accentColor1, FontAwesomeSolid.PLUS_CIRCLE, "BusAdd"));
+        busesMenu.addSubItem(new MenuItem("Otobüsleri Görüntüle", accentColor1, FontAwesomeSolid.LIST, "BusesList"));
+        busesMenu.addSubItem(new MenuItem("Otobüs Düzenle", accentColor1, FontAwesomeSolid.EDIT, "BusEdit"));
+        busesMenu.addSubItem(new MenuItem("Otobüs Sil", accentColor1, FontAwesomeSolid.TRASH_ALT, "BusDelete"));
         
         // Raporlar menüsü
-        MenuItem reportsMenu = new MenuItem("Raporlar", accentColor2);
-        reportsMenu.addSubItem(new MenuItem("Günlük Raporlar", accentColor2, "DailyReports"));
-        reportsMenu.addSubItem(new MenuItem("Aylık Raporlar", accentColor2, "MonthlyReports"));
-        reportsMenu.addSubItem(new MenuItem("Yıllık Raporlar", accentColor2, "YearlyReports"));
+        MenuItem reportsMenu = new MenuItem("Raporlar", accentColor2, FontAwesomeSolid.FILE_ALT);
+        reportsMenu.addSubItem(new MenuItem("Günlük Raporlar", accentColor2, FontAwesomeSolid.CALENDAR_DAY, "DailyReports"));
+        reportsMenu.addSubItem(new MenuItem("Aylık Raporlar", accentColor2, FontAwesomeSolid.CALENDAR_ALT, "MonthlyReports"));
+        reportsMenu.addSubItem(new MenuItem("Yıllık Raporlar", accentColor2, FontAwesomeSolid.CALENDAR, "YearlyReports"));
         
         // Şoförler menüsü
-        MenuItem driversMenu = new MenuItem("Şoförler", accentColor2);
-        driversMenu.addSubItem(new MenuItem("Şoför Ekle", accentColor2, "DriverAdd"));
-        driversMenu.addSubItem(new MenuItem("Şoförleri Görüntüle", accentColor2, "DriversList"));
-        driversMenu.addSubItem(new MenuItem("Şoför Düzenle", accentColor2, "DriverEdit"));
-        driversMenu.addSubItem(new MenuItem("Şoför Sil", accentColor2, "DriverDelete"));
+        MenuItem driversMenu = new MenuItem("Şoförler", accentColor2, FontAwesomeSolid.ID_CARD);
+        driversMenu.addSubItem(new MenuItem("Şoför Ekle", accentColor2, FontAwesomeSolid.USER_PLUS, "DriverAdd"));
+        driversMenu.addSubItem(new MenuItem("Şoförleri Görüntüle", accentColor2, FontAwesomeSolid.LIST, "DriversList"));
+        driversMenu.addSubItem(new MenuItem("Şoför Düzenle", accentColor2, FontAwesomeSolid.USER_EDIT, "DriverEdit"));
+        driversMenu.addSubItem(new MenuItem("Şoför Sil", accentColor2, FontAwesomeSolid.USER_MINUS, "DriverDelete"));
         
         // Alfabetik sırada menü listesine ekle
         menuItems.add(approvals);  // Admin Onayları
@@ -220,33 +224,18 @@ public class SuperadminDashboardFX {
         header.setSpacing(20);
         header.setStyle("-fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);");
         
-        // Arama kutusu
-        TextField searchField = new TextField();
-        searchField.setPromptText("Ara...");
-        searchField.setPrefWidth(300);
-        searchField.setStyle("-fx-background-color: #f5f6fa; -fx-background-radius: 20; -fx-padding: 8;");
-        
-        // Arama ikonu yerine renkli kutu
-        HBox searchIcon = new HBox();
-        searchIcon.setPrefSize(16, 16);
-        searchIcon.setStyle("-fx-background-color: #636e72; -fx-background-radius: 2;");
-        
-        HBox searchBox = new HBox(10);
-        searchBox.setAlignment(Pos.CENTER_LEFT);
-        searchBox.getChildren().addAll(searchIcon, searchField);
-        searchBox.setPadding(new Insets(0, 0, 0, 10));
-        
         // Sağ taraf - kullanıcı bilgisi ve çıkış
         HBox rightSide = new HBox();
-        rightSide.setAlignment(Pos.CENTER_RIGHT);
+        rightSide.setAlignment(Pos.CENTER_RIGHT); // Yatay sağa hizalama
         rightSide.setSpacing(15);
         rightSide.setPrefWidth(Integer.MAX_VALUE);
         
         // Bildirim ikonu - tıklanabilir ve mavi renkli
-        HBox notificationIcon = new HBox();
-        notificationIcon.setPrefSize(18, 18);
-        notificationIcon.setStyle("-fx-background-color: #4e54c8; -fx-background-radius: 9;");
+        FontIcon notificationIcon = new FontIcon(FontAwesomeSolid.BELL);
+        notificationIcon.setIconSize(18);
+        notificationIcon.setIconColor(Color.web("#4e54c8"));
         HBox notificationBox = new HBox(notificationIcon);
+        notificationBox.setAlignment(Pos.CENTER); // Dikey hizalama için
         notificationBox.setPadding(new Insets(0, 10, 0, 0));
         notificationBox.setStyle("-fx-cursor: hand;");
         
@@ -263,12 +252,13 @@ public class SuperadminDashboardFX {
         HBox userInfoBox = new HBox(10);
         userInfoBox.setAlignment(Pos.CENTER);
         
-        // Kullanıcı avatarı yerine renkli kutu
-        HBox avatarContainer = new HBox();
-        avatarContainer.setPrefSize(18, 18);
+        // Kullanıcı avatarı ikonu
+        FontIcon avatarIcon = new FontIcon(FontAwesomeSolid.USER_CIRCLE);
+        avatarIcon.setIconSize(24);
+        avatarIcon.setIconColor(Color.web("#4e54c8"));
+        HBox avatarContainer = new HBox(avatarIcon);
         avatarContainer.setAlignment(Pos.CENTER);
-        avatarContainer.setStyle("-fx-background-color: #4e54c8; -fx-background-radius: 15;");
-        avatarContainer.setPadding(new Insets(5, 8, 5, 8));
+        avatarContainer.setPadding(new Insets(0, 5, 0, 0));
         
         Label userInfo = new Label("Superadmin");
         userInfo.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 16));
@@ -283,7 +273,7 @@ public class SuperadminDashboardFX {
         
         rightSide.getChildren().addAll(notificationBox, userInfoBox, logoutButton);
         
-        header.getChildren().addAll(searchBox, rightSide);
+        header.getChildren().add(rightSide);
         return header;
     }
     
@@ -319,18 +309,26 @@ public class SuperadminDashboardFX {
         logoLabel.setTextFill(Color.WHITE);
         logoLabel.setPadding(new Insets(10, 0, 15, 0));
         
-        // Arama çubuğu container
-        VBox searchContainer = new VBox(5);
+        // Arama container
+        HBox searchContainer = new HBox(10);
         searchContainer.setAlignment(Pos.CENTER);
         searchContainer.setMaxWidth(200);
-        searchContainer.setStyle("-fx-background-color: transparent;"); // Beyaz dikdörtgeni kaldırmak için arkaplanı transparan yap
+        searchContainer.setStyle("-fx-background-color: transparent;");
         
-        // Arama çubuğu ekle
+        // Arama ikonu - sorunlu olduğu için HBox ile değiştiriyoruz
+        Label searchLabel = new Label("🔍");
+        searchLabel.setFont(Font.font("System", FontWeight.BOLD, 18));
+        searchLabel.setTextFill(Color.WHITE);
+        searchLabel.setStyle("-fx-cursor: hand;");
+        
+        // Arama çubuğu (başlangıçta gizli)
         TextField searchMenuField = new TextField();
         searchMenuField.setPromptText("Menüde ara...");
         searchMenuField.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8; -fx-font-size: 14px;");
-        searchMenuField.setPrefWidth(200);
-        searchMenuField.setMaxWidth(200);
+        searchMenuField.setPrefWidth(160);
+        searchMenuField.setMaxWidth(160);
+        searchMenuField.setVisible(false);
+        searchMenuField.setManaged(false);
         
         // Arama sonucu bilgisi için label (başlangıçta görünmez)
         Label searchResultLabel = new Label("Sonuç bulunamadı");
@@ -339,8 +337,46 @@ public class SuperadminDashboardFX {
         searchResultLabel.setVisible(false);
         searchResultLabel.setManaged(false);
         
-        // Arama container'ına ekle
-        searchContainer.getChildren().addAll(searchMenuField, searchResultLabel);
+        // Arama ikonu container
+        VBox searchIconBox = new VBox(5);
+        searchIconBox.setAlignment(Pos.CENTER);
+        searchIconBox.getChildren().addAll(searchLabel);
+        
+        // Arama çubuğu container
+        VBox searchFieldBox = new VBox(5);
+        searchFieldBox.setAlignment(Pos.CENTER);
+        searchFieldBox.getChildren().addAll(searchMenuField, searchResultLabel);
+        searchFieldBox.setVisible(false);
+        searchFieldBox.setManaged(false);
+        
+        // İkona tıklama olayı - arama çubuğunu göster/gizle
+        searchLabel.setOnMouseClicked(e -> {
+            boolean isVisible = searchFieldBox.isVisible();
+            searchFieldBox.setVisible(!isVisible);
+            searchFieldBox.setManaged(!isVisible);
+            searchMenuField.setVisible(!isVisible);
+            searchMenuField.setManaged(!isVisible);
+            
+            // Arama çubuğu görünürse focus yap ve ikonu gizle
+            if (!isVisible) {
+                searchMenuField.requestFocus();
+                searchIconBox.setVisible(false);
+                searchIconBox.setManaged(false);
+            }
+        });
+        
+        // Arama çubuğu kaybettiğinde ve içeriği boş ise, ikonu tekrar göster
+        searchMenuField.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal && searchMenuField.getText().isEmpty()) {
+                searchFieldBox.setVisible(false);
+                searchFieldBox.setManaged(false);
+                searchIconBox.setVisible(true);
+                searchIconBox.setManaged(true);
+            }
+        });
+        
+        // Containerları ana container'a ekle
+        searchContainer.getChildren().addAll(searchIconBox, searchFieldBox);
         
         // Arama çubuğu işlevselliği
         searchMenuField.setOnKeyReleased(e -> searchInMenu(searchMenuField.getText(), searchResultLabel));
@@ -429,17 +465,17 @@ public class SuperadminDashboardFX {
         menuBox.setAlignment(Pos.CENTER_LEFT);
         menuBox.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
         
-        // Renkli kare (ikon yerine)
-        HBox colorBox = new HBox();
-        colorBox.setPrefSize(16, 16);
-        colorBox.setStyle("-fx-background-color: " + menuItem.getColor() + "; -fx-background-radius: 3;");
+        // FontIcon kullanarak ikon oluştur
+        FontIcon icon = new FontIcon(menuItem.getIcon());
+        icon.setIconSize(18);
+        icon.setIconColor(Color.WHITE);
         
         // Başlık
         Label titleLabel = new Label(menuItem.getTitle());
         titleLabel.setFont(Font.font("Segoe UI", FontWeight.MEDIUM, 15));
         titleLabel.setTextFill(Color.WHITE);
         
-        menuBox.getChildren().addAll(colorBox, titleLabel);
+        menuBox.getChildren().addAll(icon, titleLabel);
         
         // Eğer alt menüsü varsa ok işareti ekle
         if (menuItem.hasSubItems()) {
@@ -488,27 +524,29 @@ public class SuperadminDashboardFX {
         subMenuBox.setAlignment(Pos.CENTER_LEFT);
         subMenuBox.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
         
-        // Alt menü için daha küçük renkli kare
-        HBox colorBox = new HBox();
-        colorBox.setPrefSize(12, 12);
-        colorBox.setStyle("-fx-background-color: " + subItem.getColor() + "; -fx-background-radius: 2;");
+        // FontIcon kullanarak ikon oluştur
+        FontIcon icon = new FontIcon(subItem.getIcon());
+        icon.setIconSize(14);
+        icon.setIconColor(Color.LIGHTGRAY);
         
         // Başlık - daha küçük font
         Label titleLabel = new Label(subItem.getTitle());
         titleLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
         titleLabel.setTextFill(Color.LIGHTGRAY);
         
-        subMenuBox.getChildren().addAll(colorBox, titleLabel);
+        subMenuBox.getChildren().addAll(icon, titleLabel);
         
         // Hover efektleri
         subMenuBox.setOnMouseEntered(e -> {
             subMenuBox.setStyle("-fx-background-color: #557a95; -fx-cursor: hand;");
             titleLabel.setTextFill(Color.WHITE);
+            icon.setIconColor(Color.WHITE);
         });
         
         subMenuBox.setOnMouseExited(e -> {
             subMenuBox.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
             titleLabel.setTextFill(Color.LIGHTGRAY);
+            icon.setIconColor(Color.LIGHTGRAY);
         });
         
         // Tıklama olayı - hedef sayfaya yönlendir
