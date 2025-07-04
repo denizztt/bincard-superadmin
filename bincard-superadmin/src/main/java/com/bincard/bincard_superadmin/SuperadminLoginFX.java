@@ -135,13 +135,15 @@ public class SuperadminLoginFX {
         verifyButton.setOnMouseEntered(e -> verifyButton.setStyle("-fx-background-color: #229954; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
         verifyButton.setOnMouseExited(e -> verifyButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
 
-        // Sonuç alanı
+        // Sonuç alanı - başlangıçta gizli olarak ayarla
         resultArea = new TextArea();
         resultArea.setEditable(false);
         resultArea.setWrapText(true);
         resultArea.setPrefRowCount(3);
         resultArea.setStyle("-fx-font-size: 15; -fx-background-color: #f2e9e4; -fx-border-color: #c9ada7; -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #22223b;");
         resultArea.setPrefHeight(70);
+        resultArea.setVisible(false); // Başlangıçta gizli
+        resultArea.setManaged(false); // Yer kaplamasın
 
         // Geri dön butonu
         backButton = new Button("← Ana Menü");
@@ -362,6 +364,11 @@ public class SuperadminLoginFX {
         if (message == null || message.trim().isEmpty() || message.trim().equalsIgnoreCase("null")) {
             message = isSuccess ? "İşlem başarılı." : "Bir hata oluştu. Lütfen tekrar deneyin.";
         }
+        
+        // Mesaj varsa, sonuç alanını görünür yap
+        resultArea.setVisible(true);
+        resultArea.setManaged(true);
+        
         resultArea.setText(message);
         if (isSuccess) {
             resultArea.setStyle("-fx-font-size: 15; -fx-background-color: #d4edda; -fx-border-color: #c3e6cb; -fx-border-radius: 10; -fx-background-radius: 10; -fx-text-fill: #155724;");

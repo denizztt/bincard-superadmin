@@ -31,7 +31,7 @@ public class SuperadminDashboardFX {
     private List<MenuItem> menuItems = new ArrayList<>();
     
     // Soft renk paleti için renkler - SubMenu ve başlıklar için kullanılıyor
-    private final String mainColor = "#5d5c61"; // Ana gri renk - Sidebar arkaplanı için kullanılıyor
+    private final String mainColor = "#3a4750"; // Daha koyu, şık bir renk - Sidebar arkaplanı için kullanılıyor
     private final String accentColor1 = "#379683"; // Yumuşak yeşil
     private final String accentColor2 = "#7395ae"; // Yumuşak mavi
     private final String accentColor3 = "#557a95"; // Koyu mavi
@@ -41,40 +41,13 @@ public class SuperadminDashboardFX {
     private Map<String, VBox> subMenuContainers = new HashMap<>();
     
     /**
-     * Menü yapısını oluşturur
+     * Menü yapısını oluşturur - alfabetik sıralama ile
      */
     private void initializeMenuItems() {
-        // Otobüsler menüsü
-        MenuItem busesMenu = new MenuItem("Otobüsler", accentColor1);
-        busesMenu.addSubItem(new MenuItem("Otobüs Ekle", accentColor1, "BusAdd"));
-        busesMenu.addSubItem(new MenuItem("Otobüsleri Görüntüle", accentColor1, "BusesList"));
-        busesMenu.addSubItem(new MenuItem("Otobüs Düzenle", accentColor1, "BusEdit"));
-        busesMenu.addSubItem(new MenuItem("Otobüs Sil", accentColor1, "BusDelete"));
-        menuItems.add(busesMenu);
+        // Tüm menü öğelerini oluştur
         
-        // Şoförler menüsü
-        MenuItem driversMenu = new MenuItem("Şoförler", accentColor2);
-        driversMenu.addSubItem(new MenuItem("Şoför Ekle", accentColor2, "DriverAdd"));
-        driversMenu.addSubItem(new MenuItem("Şoförleri Görüntüle", accentColor2, "DriversList"));
-        driversMenu.addSubItem(new MenuItem("Şoför Düzenle", accentColor2, "DriverEdit"));
-        driversMenu.addSubItem(new MenuItem("Şoför Sil", accentColor2, "DriverDelete"));
-        menuItems.add(driversMenu);
-        
-        // Haberler menüsü
-        MenuItem newsMenu = new MenuItem("Haberler", accentColor3);
-        newsMenu.addSubItem(new MenuItem("Haber Ekle", accentColor3, "NewsAdd"));
-        newsMenu.addSubItem(new MenuItem("Haberleri Görüntüle", accentColor3, "NewsList"));
-        newsMenu.addSubItem(new MenuItem("Haber Düzenle", accentColor3, "NewsEdit"));
-        newsMenu.addSubItem(new MenuItem("Haber Sil", accentColor3, "NewsDelete"));
-        menuItems.add(newsMenu);
-        
-        // Rotalar menüsü
-        MenuItem routesMenu = new MenuItem("Otobüs Rotaları", accentColor2);
-        routesMenu.addSubItem(new MenuItem("Rota Ekle", accentColor2, "RouteAdd"));
-        routesMenu.addSubItem(new MenuItem("Rotaları Görüntüle", accentColor2, "RoutesList"));
-        routesMenu.addSubItem(new MenuItem("Rota Düzenle", accentColor2, "RouteEdit"));
-        routesMenu.addSubItem(new MenuItem("Rota Sil", accentColor2, "RouteDelete"));
-        menuItems.add(routesMenu);
+        // Admin Onayları (alt menü olmadan)
+        MenuItem approvals = new MenuItem("Admin Onayları", accentColor1, "AdminApprovals");
         
         // Duraklar menüsü
         MenuItem stopsMenu = new MenuItem("Duraklar", accentColor3);
@@ -82,7 +55,16 @@ public class SuperadminDashboardFX {
         stopsMenu.addSubItem(new MenuItem("Durakları Görüntüle", accentColor3, "StopsList"));
         stopsMenu.addSubItem(new MenuItem("Durak Düzenle", accentColor3, "StopEdit"));
         stopsMenu.addSubItem(new MenuItem("Durak Sil", accentColor3, "StopDelete"));
-        menuItems.add(stopsMenu);
+        
+        // Haberler menüsü
+        MenuItem newsMenu = new MenuItem("Haberler", accentColor3);
+        newsMenu.addSubItem(new MenuItem("Haber Ekle", accentColor3, "NewsAdd"));
+        newsMenu.addSubItem(new MenuItem("Haberleri Görüntüle", accentColor3, "NewsList"));
+        newsMenu.addSubItem(new MenuItem("Haber Düzenle", accentColor3, "NewsEdit"));
+        newsMenu.addSubItem(new MenuItem("Haber Sil", accentColor3, "NewsDelete"));
+        
+        // İstatistikler
+        MenuItem stats = new MenuItem("İstatistikler", accentColor3, "Statistics");
         
         // Kullanıcılar menüsü
         MenuItem usersMenu = new MenuItem("Kullanıcılar", accentColor4);
@@ -90,22 +72,44 @@ public class SuperadminDashboardFX {
         usersMenu.addSubItem(new MenuItem("Kullanıcıları Görüntüle", accentColor4, "UsersList"));
         usersMenu.addSubItem(new MenuItem("Kullanıcı Düzenle", accentColor4, "UserEdit"));
         usersMenu.addSubItem(new MenuItem("Kullanıcı Sil", accentColor4, "UserDelete"));
-        menuItems.add(usersMenu);
         
-        // Admin Onayları (alt menü olmadan)
-        MenuItem approvals = new MenuItem("Admin Onayları", accentColor1, "AdminApprovals");
-        menuItems.add(approvals);
+        // Otobüs Rotaları menüsü
+        MenuItem routesMenu = new MenuItem("Otobüs Rotaları", accentColor2);
+        routesMenu.addSubItem(new MenuItem("Rota Ekle", accentColor2, "RouteAdd"));
+        routesMenu.addSubItem(new MenuItem("Rotaları Görüntüle", accentColor2, "RoutesList"));
+        routesMenu.addSubItem(new MenuItem("Rota Düzenle", accentColor2, "RouteEdit"));
+        routesMenu.addSubItem(new MenuItem("Rota Sil", accentColor2, "RouteDelete"));
         
-        // İstatistikler
-        MenuItem stats = new MenuItem("İstatistikler", accentColor3, "Statistics");
-        menuItems.add(stats);
+        // Otobüsler menüsü
+        MenuItem busesMenu = new MenuItem("Otobüsler", accentColor1);
+        busesMenu.addSubItem(new MenuItem("Otobüs Ekle", accentColor1, "BusAdd"));
+        busesMenu.addSubItem(new MenuItem("Otobüsleri Görüntüle", accentColor1, "BusesList"));
+        busesMenu.addSubItem(new MenuItem("Otobüs Düzenle", accentColor1, "BusEdit"));
+        busesMenu.addSubItem(new MenuItem("Otobüs Sil", accentColor1, "BusDelete"));
         
         // Raporlar menüsü
         MenuItem reportsMenu = new MenuItem("Raporlar", accentColor2);
         reportsMenu.addSubItem(new MenuItem("Günlük Raporlar", accentColor2, "DailyReports"));
         reportsMenu.addSubItem(new MenuItem("Aylık Raporlar", accentColor2, "MonthlyReports"));
         reportsMenu.addSubItem(new MenuItem("Yıllık Raporlar", accentColor2, "YearlyReports"));
-        menuItems.add(reportsMenu);
+        
+        // Şoförler menüsü
+        MenuItem driversMenu = new MenuItem("Şoförler", accentColor2);
+        driversMenu.addSubItem(new MenuItem("Şoför Ekle", accentColor2, "DriverAdd"));
+        driversMenu.addSubItem(new MenuItem("Şoförleri Görüntüle", accentColor2, "DriversList"));
+        driversMenu.addSubItem(new MenuItem("Şoför Düzenle", accentColor2, "DriverEdit"));
+        driversMenu.addSubItem(new MenuItem("Şoför Sil", accentColor2, "DriverDelete"));
+        
+        // Alfabetik sırada menü listesine ekle
+        menuItems.add(approvals);  // Admin Onayları
+        menuItems.add(stopsMenu);  // Duraklar
+        menuItems.add(newsMenu);   // Haberler
+        menuItems.add(stats);      // İstatistikler
+        menuItems.add(usersMenu);  // Kullanıcılar
+        menuItems.add(routesMenu); // Otobüs Rotaları
+        menuItems.add(busesMenu);  // Otobüsler
+        menuItems.add(reportsMenu); // Raporlar
+        menuItems.add(driversMenu); // Şoförler
     }
 
     public SuperadminDashboardFX(Stage stage, TokenDTO accessToken, TokenDTO refreshToken) {
@@ -171,7 +175,16 @@ public class SuperadminDashboardFX {
         
         // Sol sidebar menü
         VBox sidebar = createSidebar();
-        root.setLeft(sidebar);
+        
+        // Sidebar'ı ScrollPane içine al (uzun menüler için kaydırma desteği)
+        ScrollPane sidebarScroll = new ScrollPane(sidebar);
+        sidebarScroll.setFitToWidth(true);
+        sidebarScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sidebarScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        sidebarScroll.setStyle("-fx-background-color: transparent; -fx-background: " + mainColor + "; -fx-padding: 0;");
+        sidebarScroll.setPrefWidth(250);
+        
+        root.setLeft(sidebarScroll);
         
         // İçerik alanı (başlangıçta hoşgeldiniz mesajı)
         VBox contentArea = createWelcomeContent();
@@ -229,13 +242,22 @@ public class SuperadminDashboardFX {
         rightSide.setSpacing(15);
         rightSide.setPrefWidth(Integer.MAX_VALUE);
         
-        // Bildirim ikonu yerine renkli kutu
+        // Bildirim ikonu - tıklanabilir ve mavi renkli
         HBox notificationIcon = new HBox();
         notificationIcon.setPrefSize(18, 18);
-        notificationIcon.setStyle("-fx-background-color: #636e72; -fx-background-radius: 9;");
+        notificationIcon.setStyle("-fx-background-color: #4e54c8; -fx-background-radius: 9;");
         HBox notificationBox = new HBox(notificationIcon);
         notificationBox.setPadding(new Insets(0, 10, 0, 0));
         notificationBox.setStyle("-fx-cursor: hand;");
+        
+        // Bildirim ikonuna tıklama işlevselliği ekle
+        notificationBox.setOnMouseClicked(e -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Bildirimler");
+            alert.setHeaderText("Bildirimler");
+            alert.setContentText("Şu anda yeni bir bildiriminiz bulunmamaktadır.");
+            alert.showAndWait();
+        });
         
         // Kullanıcı bilgisi
         HBox userInfoBox = new HBox(10);
@@ -295,16 +317,37 @@ public class SuperadminDashboardFX {
         Label logoLabel = new Label("BINCARD");
         logoLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 22));
         logoLabel.setTextFill(Color.WHITE);
-        logoLabel.setPadding(new Insets(10, 0, 20, 0));
+        logoLabel.setPadding(new Insets(10, 0, 15, 0));
         
-        // Separator
-        HBox separator = new HBox();
-        separator.setPrefHeight(1);
-        separator.setStyle("-fx-background-color: #ffffff;");
-        separator.setMaxWidth(200);
-        separator.setPadding(new Insets(0, 0, 15, 0));
+        // Arama çubuğu container
+        VBox searchContainer = new VBox(5);
+        searchContainer.setAlignment(Pos.CENTER);
+        searchContainer.setMaxWidth(200);
+        searchContainer.setStyle("-fx-background-color: transparent;"); // Beyaz dikdörtgeni kaldırmak için arkaplanı transparan yap
         
-        sidebar.getChildren().addAll(logoLabel, separator);
+        // Arama çubuğu ekle
+        TextField searchMenuField = new TextField();
+        searchMenuField.setPromptText("Menüde ara...");
+        searchMenuField.setStyle("-fx-background-color: #f8f9fa; -fx-background-radius: 20; -fx-border-radius: 20; -fx-padding: 8; -fx-font-size: 14px;");
+        searchMenuField.setPrefWidth(200);
+        searchMenuField.setMaxWidth(200);
+        
+        // Arama sonucu bilgisi için label (başlangıçta görünmez)
+        Label searchResultLabel = new Label("Sonuç bulunamadı");
+        searchResultLabel.setTextFill(Color.LIGHTPINK);
+        searchResultLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 12));
+        searchResultLabel.setVisible(false);
+        searchResultLabel.setManaged(false);
+        
+        // Arama container'ına ekle
+        searchContainer.getChildren().addAll(searchMenuField, searchResultLabel);
+        
+        // Arama çubuğu işlevselliği
+        searchMenuField.setOnKeyReleased(e -> searchInMenu(searchMenuField.getText(), searchResultLabel));
+        
+        // Separator çizgisi kaldırıldı
+        
+        sidebar.getChildren().addAll(logoLabel, searchContainer);
         
         // Ana menü öğelerini ekle
         for (MenuItem menuItem : menuItems) {
@@ -705,5 +748,249 @@ public class SuperadminDashboardFX {
     private void logout() {
         // Çıkış işlemleri (token temizleme vb.)
         new MainMenuFX(stage);
+    }
+    
+    /**
+     * Menüde arama yaparak eşleşen öğelere gitmeyi sağlar
+     */
+    private void searchInMenu(String searchText, Label resultLabel) {
+        if (searchText == null || searchText.trim().isEmpty()) {
+            // Sonuç etiketini gizle
+            resultLabel.setVisible(false);
+            resultLabel.setManaged(false);
+            
+            // Arama metni boşsa tüm menüleri normal göster
+            resetAllMenus();
+            return;
+        }
+        
+        searchText = searchText.toLowerCase().trim();
+        boolean foundMatch = false;
+        
+        // Önce doğrudan ana menü öğelerinde ara
+        for (MenuItem item : menuItems) {
+            String title = item.getTitle().toLowerCase();
+            boolean matchesMainMenu = title.contains(searchText);
+            boolean hasMatchingSubMenu = false;
+            
+            // Alt menülerde ara
+            if (item.hasSubItems()) {
+                for (MenuItem subItem : item.getSubItems()) {
+                    if (subItem.getTitle().toLowerCase().contains(searchText)) {
+                        hasMatchingSubMenu = true;
+                    }
+                }
+            }
+            
+            // Ana menü öğelerinin bulunduğu container'ları bul
+            VBox menuContainer = findMenuContainer(item.getTitle());
+            
+            if (menuContainer != null) {
+                // Eşleşme varsa göster, yoksa gizle
+                menuContainer.setVisible(matchesMainMenu || hasMatchingSubMenu);
+                menuContainer.setManaged(matchesMainMenu || hasMatchingSubMenu);
+                
+                // Eşleşen alt menüleri göster
+                if (hasMatchingSubMenu && subMenuContainers.containsKey(item.getTitle())) {
+                    VBox subMenuBox = subMenuContainers.get(item.getTitle());
+                    subMenuBox.setVisible(true);
+                    subMenuBox.setManaged(true);
+                    
+                    // Alt menü içindeki öğeleri filtrele
+                    for (Node node : subMenuBox.getChildren()) {
+                        if (node instanceof HBox) {
+                            HBox subMenuItem = (HBox) node;
+                            String subMenuTitle = "";
+                            
+                            // Alt menü başlığını bul
+                            for (Node child : subMenuItem.getChildren()) {
+                                if (child instanceof Label) {
+                                    Label label = (Label) child;
+                                    if (!label.getText().equals("▼") && !label.getText().equals("▲")) {
+                                        subMenuTitle = label.getText();
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Alt menü başlığı eşleşiyorsa göster ve tıklama işlevi ekle
+                            boolean subMenuMatches = subMenuTitle.toLowerCase().contains(searchText);
+                            subMenuItem.setVisible(subMenuMatches);
+                            subMenuItem.setManaged(subMenuMatches);
+                            
+                            // Eğer alt menü eşleşiyorsa vurgula - daha güzel bir renk kullan
+                            if (subMenuMatches) {
+                                String menuColor = item.getColor();
+                                // Daha parlak bir vurgu rengi için menü renginin opaklığını arttır
+                                subMenuItem.setStyle("-fx-background-color: " + menuColor + "AA; -fx-cursor: hand;"); // %67 opaklık
+                                
+                                // Mouse üzerine gelince ve çıkınca rengi koru
+                                subMenuItem.setOnMouseEntered(e -> {
+                                    subMenuItem.setStyle("-fx-background-color: " + menuColor + "; -fx-cursor: hand;");
+                                });
+                                
+                                subMenuItem.setOnMouseExited(e -> {
+                                    subMenuItem.setStyle("-fx-background-color: " + menuColor + "AA; -fx-cursor: hand;");
+                                });
+                                
+                                // Yazı rengini beyaz yap
+                                for (Node child : subMenuItem.getChildren()) {
+                                    if (child instanceof Label && !((Label) child).getText().equals("▼") && !((Label) child).getText().equals("▲")) {
+                                        ((Label) child).setTextFill(Color.WHITE);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Ana menü öğesine eşleşme vurgusu ekle
+                if (matchesMainMenu) {
+                    HBox mainMenuItem = (HBox) menuContainer.getChildren().get(0);
+                    String menuColor = item.getColor();
+                    // Ana menü için daha güçlü bir vurgu rengi
+                    mainMenuItem.setStyle("-fx-background-color: " + menuColor + "; -fx-cursor: hand;");
+                    
+                    // Mouse çıkınca vurguyu koru (arama aktifken)
+                    mainMenuItem.setOnMouseExited(e -> {
+                        mainMenuItem.setStyle("-fx-background-color: " + menuColor + "; -fx-cursor: hand;");
+                    });
+                }
+                
+                if (matchesMainMenu || hasMatchingSubMenu) {
+                    foundMatch = true;
+                }
+            }
+        }
+        
+        // Eşleşme yoksa kullanıcıya bildir
+        if (!foundMatch) {
+            resultLabel.setText("Sonuç bulunamadı: " + searchText);
+            resultLabel.setVisible(true);
+            resultLabel.setManaged(true);
+        } else {
+            resultLabel.setVisible(false);
+            resultLabel.setManaged(false);
+        }
+    }
+    
+    /**
+     * Tüm menüleri orijinal durumuna sıfırlar
+     */
+    private void resetAllMenus() {
+        for (MenuItem item : menuItems) {
+            // Ana menü öğelerinin bulunduğu container'ları bul
+            VBox menuContainer = findMenuContainer(item.getTitle());
+            if (menuContainer != null) {
+                // Tüm menü containerları görünür yap
+                menuContainer.setVisible(true);
+                menuContainer.setManaged(true);
+                
+                // Ana menü öğesinin stilini sıfırla
+                if (menuContainer.getChildren().size() > 0 && menuContainer.getChildren().get(0) instanceof HBox) {
+                    HBox mainMenuItem = (HBox) menuContainer.getChildren().get(0);
+                    mainMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+                    
+                    // Ana menü hover efektlerini yeniden tanımla
+                    final MenuItem finalItem = item; // Lambda için final değişken
+                    mainMenuItem.setOnMouseEntered(e -> {
+                        if (finalItem.hasSubItems() && subMenuContainers.containsKey(finalItem.getTitle()) && 
+                            subMenuContainers.get(finalItem.getTitle()).isVisible()) {
+                            mainMenuItem.setStyle("-fx-background-color: " + finalItem.getColor() + "; -fx-cursor: hand;");
+                        } else {
+                            mainMenuItem.setStyle("-fx-background-color: " + finalItem.getColor() + "99; -fx-cursor: hand;");
+                        }
+                    });
+                    
+                    mainMenuItem.setOnMouseExited(e -> {
+                        if (!finalItem.hasSubItems() || !subMenuContainers.containsKey(finalItem.getTitle()) || 
+                            !subMenuContainers.get(finalItem.getTitle()).isVisible()) {
+                            mainMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+                        } else {
+                            mainMenuItem.setStyle("-fx-background-color: " + finalItem.getColor() + "80; -fx-cursor: hand;");
+                        }
+                    });
+                }
+                
+                // Alt menü görünürlüğünü sıfırla
+                if (subMenuContainers.containsKey(item.getTitle())) {
+                    VBox subMenuBox = subMenuContainers.get(item.getTitle());
+                    // Alt menüyü kapat
+                    subMenuBox.setVisible(false);
+                    subMenuBox.setManaged(false);
+                    
+                    // Alt menü içindeki tüm öğeleri görünür yap ve stillerini sıfırla
+                    for (Node node : subMenuBox.getChildren()) {
+                        if (node instanceof HBox) {
+                            HBox subMenuItem = (HBox) node;
+                            subMenuItem.setVisible(true);
+                            subMenuItem.setManaged(true);
+                            subMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+                            
+                            // Alt başlık yazı rengini gri yap
+                            for (Node child : subMenuItem.getChildren()) {
+                                if (child instanceof Label && !((Label) child).getText().equals("▼") && !((Label) child).getText().equals("▲")) {
+                                    ((Label) child).setTextFill(Color.LIGHTGRAY);
+                                }
+                            }
+                            
+                            // Alt menü hover efektlerini yeniden tanımla
+                            final String menuColor = item.getColor();
+                            subMenuItem.setOnMouseEntered(e -> {
+                                subMenuItem.setStyle("-fx-background-color: " + menuColor + "; -fx-cursor: hand;");
+                                for (Node child : subMenuItem.getChildren()) {
+                                    if (child instanceof Label && !((Label) child).getText().equals("▼") && !((Label) child).getText().equals("▲")) {
+                                        ((Label) child).setTextFill(Color.WHITE);
+                                    }
+                                }
+                            });
+                            
+                            subMenuItem.setOnMouseExited(e -> {
+                                subMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+                                for (Node child : subMenuItem.getChildren()) {
+                                    if (child instanceof Label && !((Label) child).getText().equals("▼") && !((Label) child).getText().equals("▲")) {
+                                        ((Label) child).setTextFill(Color.LIGHTGRAY);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Belirli başlığa sahip menü container'ını bulur
+     */
+    private VBox findMenuContainer(String title) {
+        // Ana sahneyi ve BorderPane'i al
+        BorderPane root = (BorderPane) stage.getScene().getRoot();
+        
+        // ScrollPane'i al (sol bölümde)
+        ScrollPane sidebarScroll = (ScrollPane) root.getLeft();
+        
+        // VBox sidebar'ı al
+        VBox sidebar = (VBox) sidebarScroll.getContent();
+        
+        // Logo, arama kutusu ve separator'ı atla (ilk 3 öğe)
+        for (int i = 3; i < sidebar.getChildren().size(); i++) {
+            Node node = sidebar.getChildren().get(i);
+            if (node instanceof VBox) {
+                VBox container = (VBox) node;
+                if (container.getChildren().size() > 0 && container.getChildren().get(0) instanceof HBox) {
+                    HBox menuItem = (HBox) container.getChildren().get(0);
+                    for (Node child : menuItem.getChildren()) {
+                        if (child instanceof Label) {
+                            Label label = (Label) child;
+                            if (label.getText().equals(title)) {
+                                return container;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
