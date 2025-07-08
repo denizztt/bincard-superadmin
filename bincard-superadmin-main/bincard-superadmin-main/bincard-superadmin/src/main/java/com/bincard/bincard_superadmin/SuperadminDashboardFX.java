@@ -436,24 +436,23 @@ public class SuperadminDashboardFX {
                 // Final değişken olarak tanımla (lambda içinde kullanabilmek için)
                 final Label finalArrowLabel = arrowLabel;
                 
-                // Ana menü tıklama olayı (alt menüyü göster/gizle)
+                // Ana menü tıklama olayı (alt menüyü göster/gizle) - Accordion mantığı ile
                 mainMenuItem.setOnMouseClicked(e -> {
                     boolean isVisible = subMenuBox.isVisible();
-                    subMenuBox.setVisible(!isVisible);
-                    subMenuBox.setManaged(!isVisible);
                     
-                    // Ana menü arka plan rengini değiştir (açık/kapalı durumu göstermek için)
+                    // Accordion mantığı: Önce tüm alt menüleri kapat
+                    closeAllSubMenus();
+                    
+                    // Eğer menü kapalıysa aç, açıksa aç (çünkü yukarıda kapattık)
                     if (!isVisible) {
+                        subMenuBox.setVisible(true);
+                        subMenuBox.setManaged(true);
+                        
+                        // Ana menü arka plan rengini değiştir (açık durumu göstermek için)
                         mainMenuItem.setStyle("-fx-background-color: " + menuItem.getColor() + "; -fx-cursor: hand;");
                         // Ok işaretini çevir (açık)
                         if (finalArrowLabel != null) {
                             finalArrowLabel.setText("▲");
-                        }
-                    } else {
-                        mainMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-                        // Ok işaretini çevir (kapalı)
-                        if (finalArrowLabel != null) {
-                            finalArrowLabel.setText("▼");
                         }
                     }
                 });
@@ -1119,6 +1118,74 @@ public class SuperadminDashboardFX {
                             Label label = (Label) child;
                             if (label.getText().equals(title)) {
                                 return container;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Tüm alt menüleri kapatır - Accordion mantığı için
+     */
+    private void closeAllSubMenus() {
+        for (Map.Entry<String, VBox> entry : subMenuContainers.entrySet()) {
+            String menuTitle = entry.getKey();
+            VBox subMenuBox = entry.getValue();
+            
+            // Alt menüyü kapat
+            subMenuBox.setVisible(false);
+            subMenuBox.setManaged(false);
+            
+            // Ana menü öğesinin stilini sıfırla ve ok işaretini aşağı çevir
+            // Ana menü öğesini bul
+            for (MenuItem menuItem : menuItems) {
+                if (menuItem.getTitle().equals(menuTitle) && menuItem.hasSubItems()) {
+                    // Ana menü öğesinin HBox'ını bul
+                    HBox mainMenuItem = findMainMenuItemBox(menuTitle);
+                    if (mainMenuItem != null) {
+                        // Arka plan stilini şeffaf yap
+                        mainMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+                        
+                        // Ok işaretini aşağı çevir
+                        for (Node child : mainMenuItem.getChildren()) {
+                            if (child instanceof Label && (((Label) child).getText().equals("▲") || ((Label) child).getText().equals("▼"))) {
+                                ((Label) child).setText("▼");
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Belirtilen menü başlığına sahip ana menü öğesinin HBox'ını bulur
+     */
+    private HBox findMainMenuItemBox(String menuTitle) {
+        // Bu metod sidebar içindeki VBox'ları dolaşır ve doğru ana menü öğesini bulur
+        // Sidebar'daki tüm çocukları kontrol et
+        if (stage != null && stage.getScene() != null && stage.getScene().getRoot() instanceof BorderPane) {
+            BorderPane root = (BorderPane) stage.getScene().getRoot();
+            if (root.getLeft() instanceof VBox) {
+                VBox sidebar = (VBox) root.getLeft();
+                for (Node child : sidebar.getChildren()) {
+                    if (child instanceof VBox) {
+                        VBox menuContainer = (VBox) child;
+                        if (menuContainer.getChildren().size() > 0 && menuContainer.getChildren().get(0) instanceof HBox) {
+                            HBox mainMenuItem = (HBox) menuContainer.getChildren().get(0);
+                            // Bu ana menü öğesinin başlığını bul
+                            for (Node menuChild : mainMenuItem.getChildren()) {
+                                if (menuChild instanceof Label) {
+                                    Label titleLabel = (Label) menuChild;
+                                    if (titleLabel.getText().equals(menuTitle)) {
+                                        return mainMenuItem;
+                                    }
+                                }
                             }
                         }
                     }

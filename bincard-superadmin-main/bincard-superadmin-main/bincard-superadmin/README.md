@@ -19,6 +19,8 @@ Bu proje, Bincard yönetim sisteminin **Superadmin** panelidir. Orijinal admin p
 - **Bildirim Sistemi**: Dashboard'da çan ikonu ile bildirim butonu eklendi
 - **Layout Düzenlemeleri**: Header yapısı spacer ile daha düzenli hizalandı
 - **Modern Hover Efektleri**: Butonlara gelişmiş animasyonlar eklendi
+- **Accordion Menü**: Sol menüde bir alt menü açıldığında diğerleri otomatik kapanır
+- **Menü UX İyileştirmeleri**: Ok işaretleri (▲/▼) accordion durumuna göre güncellenir
 
 ## 🔥 Özellikler
 
@@ -36,7 +38,7 @@ Bu proje, Bincard yönetim sisteminin **Superadmin** panelidir. Orijinal admin p
 - **Alt Sayfalar**: Sol üstte ← geri dön ikonu, temiz layout
 - **Responsive Design**: Tüm ekran boyutlarına uyumlu
 - **Sürekli Tam Ekran**: Tam ekran modunda optimized çalışma
-- **Açılır/Kapanır Menü**: Alt menü sistemi
+- **Accordion Menü**: Sol menüde bir alt menü açıldığında diğerleri otomatik kapanır
 - **Soft Renkli Tema**: Göze rahatlık sağlayan renk paleti
 
 ### 📊 Yönetim Özellikleri
@@ -300,6 +302,15 @@ TokenExpiredException
 
 ## 🔄 Sürüm Geçmişi
 
+### v1.3.1 (Temmuz 2025)
+🎨 **Accordion Menü Sistemi**
+- Sol menüde accordion mantığı eklendi
+- Bir alt menü açıldığında diğerleri otomatik kapanır
+- closeAllSubMenus() metodu ile menü kontrolü
+- findMainMenuItemBox() metodu ile menü element bulma
+- Ok işaretleri (▲/▼) accordion durumuna göre güncellenir
+- Menü UX iyileştirmeleri ve stil optimizasyonu
+
 ### v1.3.0 (Temmuz 2025)
 🔌 **Backend API Entegrasyonu**
 - Gelir raporları sayfası ve API entegrasyonu
@@ -371,7 +382,7 @@ Bu proje özel/kurumsal kullanım içindir. Daha fazla bilgi için proje sahibi 
 
 🎨 **UI/UX**:
 - Tüm sayfalar için soft renkli tema kullanılır
-- Alt menüleri açmak için ana menü öğelerine tıklayın
+- Sol menüde accordion mantığı: bir alt menü açıldığında diğerleri otomatik kapanır
 - Hover efektleri ve animasyonlar UX'i geliştirir
 - Header'lar temiz ve minimal tasarımla optimize edilmiştir
 
@@ -382,4 +393,4 @@ Bu proje özel/kurumsal kullanım içindir. Daha fazla bilgi için proje sahibi 
 
 ---
 
-**🌟 Son güncelleme: Temmuz 2025 - v1.3.0**
+**🌟 Son güncelleme: Temmuz 2025 - v1.3.1**
