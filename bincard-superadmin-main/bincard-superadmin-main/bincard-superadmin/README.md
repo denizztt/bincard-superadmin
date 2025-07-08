@@ -6,6 +6,13 @@ Bu proje, Bincard yönetim sisteminin **Superadmin** panelidir. Orijinal admin p
 
 ## ✨ Son Güncellemeler
 
+### 🔌 Backend API Entegrasyonu (Temmuz 2025)
+- **Gelir Raporları**: Günlük, haftalık, aylık gelir API'leri entegre edildi
+- **Denetim Kayıtları**: Audit logs sayfası ve filtreleme özellikleri eklendi
+- **Admin Onayları**: Gerçek API ile onaylama/reddetme işlemleri
+- **Dashboard İyileştirmeleri**: Canlı gelir kartları ve real-time veriler
+- **Yeni Sayfalar**: IncomeReportsPage ve AuditLogsPage eklendi
+
 ### 🎨 UI/UX İyileştirmeleri (Temmuz 2025)
 - **Header Optimizasyonu**: Dashboard ve alt sayfalardaki gereksiz UI elemanları kaldırıldı
 - **Navigasyon İyileştirmeleri**: Geri dön butonu ikon olarak (←) değiştirildi
@@ -66,8 +73,21 @@ Bu proje, Bincard yönetim sisteminin **Superadmin** panelidir. Orijinal admin p
 
 - **✅ Admin Onayları**
   - Bekleyen admin başvurularını görüntüleme
-  - Onaylama/Reddetme işlemleri
-  - Real-time durrum güncellemeleri
+  - Onaylama/Reddetme işlemleri (Gerçek API entegreli)
+  - Real-time durum güncellemeleri
+  - JSON parse ve hata yönetimi
+
+- **💰 Gelir Raporları**
+  - Günlük/Haftalık/Aylık gelir analizi
+  - Gelir dağılım grafikları (Pasta ve Çizgi)
+  - Real-time API veri çekme
+  - Dashboard'da canlı gelir kartları
+
+- **📋 Denetim Kayıtları (Audit Logs)**
+  - Tüm sistem aktivitelerini görüntüleme
+  - Tarih aralığı ve aksiyon filtreleme
+  - Renk kodlu aktivite türleri
+  - IP adresi ve detaylı log bilgileri
 
 - **📊 İstatistikler**
   - Dashboard ana sayfa kartları
@@ -145,6 +165,8 @@ bincard-superadmin/
 │       │               ├── 👤 DriversPage.java (Şoförler)
 │       │               ├── 📰 NewsPage.java (Haberler)
 │       │               ├── ✅ AdminApprovalsPage.java (Admin onayları)
+│       │               ├── 💰 IncomeReportsPage.java (Gelir raporları)
+│       │               ├── 📋 AuditLogsPage.java (Denetim kayıtları)
 │       │               └── ... (Diğer sayfalar)
 │       └── resources/
 ├── target/ (Derleme çıktıları)
@@ -175,6 +197,20 @@ PATH_TO_FX=/path/to/javafx/lib
 POST /auth/superadmin-login
 POST /auth/phone-verify
 POST /auth/refresh
+
+// Admin yönetimi (SuperAdmin Controller)
+GET /v1/api/superadmin/admin-requests/pending
+POST /v1/api/superadmin/admin-requests/{adminId}/approve
+POST /v1/api/superadmin/admin-requests/{adminId}/reject
+
+// Gelir raporları
+GET /v1/api/superadmin/income-summary
+GET /v1/api/superadmin/bus-income/daily
+GET /v1/api/superadmin/bus-income/weekly
+GET /v1/api/superadmin/bus-income/monthly
+
+// Denetim kayıtları
+GET /v1/api/superadmin/audit-logs
 
 // Haber yönetimi
 GET /news/
@@ -264,6 +300,15 @@ TokenExpiredException
 
 ## 🔄 Sürüm Geçmişi
 
+### v1.3.0 (Temmuz 2025)
+🔌 **Backend API Entegrasyonu**
+- Gelir raporları sayfası ve API entegrasyonu
+- Denetim kayıtları (audit logs) sayfası eklendi
+- Admin onayları için gerçek API bağlantıları
+- Dashboard'da canlı gelir verileri
+- SuperAdminController endpoint'leri entegre edildi
+- Asenkron veri çekme ve JSON parse işlemleri
+
 ### v1.2.0 (Temmuz 2025)
 🎨 **UI/UX İyileştirmeleri**
 - Header optimizasyonu ve gereksiz UI elemanları kaldırıldı
@@ -337,4 +382,4 @@ Bu proje özel/kurumsal kullanım içindir. Daha fazla bilgi için proje sahibi 
 
 ---
 
-**🌟 Son güncelleme: Temmuz 2025 - v1.2.0**
+**🌟 Son güncelleme: Temmuz 2025 - v1.3.0**

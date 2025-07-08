@@ -70,6 +70,9 @@ public class SuperadminDashboardFX {
         // İstatistikler
         MenuItem stats = new MenuItem("İstatistikler", accentColor3, FontAwesomeSolid.CHART_BAR, "Statistics");
         
+        // Denetim Kayıtları
+        MenuItem auditLogs = new MenuItem("Denetim Kayıtları", accentColor4, FontAwesomeSolid.CLIPBOARD_LIST, "AuditLogs");
+        
         // Kullanıcılar menüsü
         MenuItem usersMenu = new MenuItem("Kullanıcılar", accentColor4, FontAwesomeSolid.USERS);
         usersMenu.addSubItem(new MenuItem("Kullanıcı Ekle", accentColor4, FontAwesomeSolid.USER_PLUS, "UserAdd"));
@@ -93,6 +96,7 @@ public class SuperadminDashboardFX {
         
         // Raporlar menüsü
         MenuItem reportsMenu = new MenuItem("Raporlar", accentColor2, FontAwesomeSolid.FILE_ALT);
+        reportsMenu.addSubItem(new MenuItem("Gelir Raporları", accentColor2, FontAwesomeSolid.CHART_LINE, "IncomeReports"));
         reportsMenu.addSubItem(new MenuItem("Günlük Raporlar", accentColor2, FontAwesomeSolid.CALENDAR_DAY, "DailyReports"));
         reportsMenu.addSubItem(new MenuItem("Aylık Raporlar", accentColor2, FontAwesomeSolid.CALENDAR_ALT, "MonthlyReports"));
         reportsMenu.addSubItem(new MenuItem("Yıllık Raporlar", accentColor2, FontAwesomeSolid.CALENDAR, "YearlyReports"));
@@ -106,6 +110,7 @@ public class SuperadminDashboardFX {
         
         // Alfabetik sırada menü listesine ekle
         menuItems.add(approvals);  // Admin Onayları
+        menuItems.add(auditLogs);  // Denetim Kayıtları
         menuItems.add(stopsMenu);  // Duraklar
         menuItems.add(newsMenu);   // Haberler
         menuItems.add(stats);      // İstatistikler
@@ -595,13 +600,16 @@ public class SuperadminDashboardFX {
         statsContainer.setAlignment(Pos.CENTER);
         statsContainer.setPadding(new Insets(30, 0, 0, 0));
         
-        // Demo istatistik kartları
+        // İstatistik kartları - API'dan veri yüklenene kadar demo değerler
         VBox totalUsers = createStatCard("Toplam Kullanıcılar", "12,543", "#4e54c8", "\uf0c0");
         VBox activeUsers = createStatCard("Aktif Kullanıcılar", "8,729", "#2ecc71", "\uf0c1");
         VBox totalBuses = createStatCard("Toplam Otobüsler", "342", "#3498db", "\uf207");
-        VBox totalDrivers = createStatCard("Toplam Şoförler", "562", "#e74c3c", "\uf2bd");
+        VBox dailyIncome = createStatCard("Günlük Gelir", "₺0", "#e74c3c", "\uf155");
         
-        statsContainer.getChildren().addAll(totalUsers, activeUsers, totalBuses, totalDrivers);
+        statsContainer.getChildren().addAll(totalUsers, activeUsers, totalBuses, dailyIncome);
+        
+        // Gelir verilerini API'dan yükle ve kartları güncelle
+        loadDashboardData(dailyIncome);
         
         content.getChildren().addAll(welcomeTitle, description, timeLabel, statsContainer);
         
@@ -638,6 +646,77 @@ public class SuperadminDashboardFX {
         return statCard;
     }
     
+    /**
+     * Dashboard verilerini API'dan yükler
+     */
+    private void loadDashboardData(VBox dailyIncomeCard) {
+        // Gelir verilerini asenkron olarak yükle
+        java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+            try {
+                String response = ApiClientFX.getIncomeSummary(accessToken);
+                return parseIncomeSummary(response);
+            } catch (Exception e) {
+                System.err.println("Dashboard verileri yüklenirken hata: " + e.getMessage());
+                return null;
+            }
+        }).thenAccept(incomeData -> {
+            if (incomeData != null) {
+                javafx.application.Platform.runLater(() -> {
+                    // Günlük gelir kartını güncelle
+                    Label valueLabel = (Label) dailyIncomeCard.getChildren().get(1);
+                    valueLabel.setText(String.format("₺%,.0f", incomeData[0])); // dailyIncome
+                });
+            }
+        });
+    }
+    
+    /**
+     * Gelir API yanıtını parse eder
+     */
+    private double[] parseIncomeSummary(String jsonResponse) {
+        try {
+            double[] result = new double[4]; // daily, weekly, monthly, total
+            
+            if (jsonResponse.contains("\"data\":{")) {
+                String dataSection = jsonResponse.split("\"data\":")[1];
+                if (dataSection.startsWith("{")) {
+                    int endIndex = dataSection.lastIndexOf("}");
+                    if (endIndex > 0) {
+                        dataSection = dataSection.substring(1, endIndex);
+                    }
+                    
+                    // JSON değerlerini parse et
+                    result[0] = extractDoubleFromJson(dataSection, "dailyIncome");
+                    result[1] = extractDoubleFromJson(dataSection, "weeklyIncome");
+                    result[2] = extractDoubleFromJson(dataSection, "monthlyIncome");
+                    result[3] = extractDoubleFromJson(dataSection, "totalIncome");
+                }
+            }
+            
+            return result;
+        } catch (Exception e) {
+            System.err.println("Gelir parse hatası: " + e.getMessage());
+            return new double[]{0, 0, 0, 0};
+        }
+    }
+    
+    /**
+     * JSON string'den double değer çıkarır
+     */
+    private double extractDoubleFromJson(String json, String key) {
+        try {
+            String pattern = "\"" + key + "\"\\s*:\\s*([0-9]+\\.?[0-9]*)";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                return Double.parseDouble(m.group(1));
+            }
+        } catch (Exception e) {
+            System.err.println("Double değer parse hatası: " + e.getMessage());
+        }
+        return 0.0;
+    }
+    
     private void navigateToSection(String section) {
         System.out.println(section + " bölümüne yönlendiriliyor...");
         
@@ -656,6 +735,9 @@ public class SuperadminDashboardFX {
                 case "Admin Onayları":
                 case "AdminApprovals":
                     new AdminApprovalsPage(stage, accessToken, refreshToken, hostServices);
+                    break;
+                case "AuditLogs":
+                    new AuditLogsPage(stage, accessToken, refreshToken);
                     break;
                 case "Statistics":
                     showUnderConstructionAlert("İstatistikler");
@@ -746,6 +828,9 @@ public class SuperadminDashboardFX {
                     break;
                     
                 // Rapor alt sayfaları
+                case "IncomeReports":
+                    new IncomeReportsPage(stage, accessToken, refreshToken);
+                    break;
                 case "DailyReports":
                     showUnderConstructionAlert("Günlük Raporlar");
                     break;

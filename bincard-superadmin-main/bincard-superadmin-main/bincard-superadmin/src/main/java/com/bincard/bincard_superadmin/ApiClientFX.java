@@ -770,4 +770,298 @@ public class ApiClientFX {
             return null;
         }
     }
+    
+    // =================================================================
+    // SUPERADMIN API METHODS - Backend Controller Integration
+    // =================================================================
+    
+    /**
+     * Bekleyen admin onay taleplerini getirir
+     * GET /v1/api/superadmin/admin-requests/pending
+     */
+    public static String getPendingAdminRequests(TokenDTO accessToken, int page, int size) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/admin-requests/pending";
+        endpoint += "?page=" + page + "&size=" + size + "&sort=createdAt&direction=DESC";
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Admin istekleri alınamadı: " + code);
+            }
+        }
+    }
+    
+    /**
+     * Admin isteğini onaylar
+     * POST /v1/api/superadmin/admin-requests/{adminId}/approve
+     */
+    public static String approveAdminRequest(TokenDTO accessToken, Long adminId) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/admin-requests/" + adminId + "/approve";
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        conn.setDoOutput(true);
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Admin isteği onaylanamadı: " + code);
+            }
+        }
+    }
+    
+    /**
+     * Admin isteğini reddeder
+     * POST /v1/api/superadmin/admin-requests/{adminId}/reject
+     */
+    public static String rejectAdminRequest(TokenDTO accessToken, Long adminId) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/admin-requests/" + adminId + "/reject";
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        conn.setDoOutput(true);
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Admin isteği reddedilemedi: " + code);
+            }
+        }
+    }
+    
+    /**
+     * Gelir özetini getirir (günlük, haftalık, aylık)
+     * GET /v1/api/superadmin/income-summary
+     */
+    public static String getIncomeSummary(TokenDTO accessToken) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/income-summary";
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Gelir özeti alınamadı: " + code);
+            }
+        }
+    }
+    
+    /**
+     * Günlük otobüs gelirini getirir
+     * GET /v1/api/superadmin/bus-income/daily
+     */
+    public static String getDailyBusIncome(TokenDTO accessToken, String date) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/bus-income/daily?date=" + date;
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Günlük gelir verisi alınamadı: " + code);
+            }
+        }
+    }
+    
+    /**
+     * Haftalık otobüs gelirini getirir
+     * GET /v1/api/superadmin/bus-income/weekly
+     */
+    public static String getWeeklyBusIncome(TokenDTO accessToken, String startDate, String endDate) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/bus-income/weekly?startDate=" + startDate + "&endDate=" + endDate;
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Haftalık gelir verisi alınamadı: " + code);
+            }
+        }
+    }
+    
+    /**
+     * Aylık otobüs gelirini getirir
+     * GET /v1/api/superadmin/bus-income/monthly
+     */
+    public static String getMonthlyBusIncome(TokenDTO accessToken, int year, int month) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/bus-income/monthly?year=" + year + "&month=" + month;
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Aylık gelir verisi alınamadı: " + code);
+            }
+        }
+    }
+    
+    /**
+     * Audit log geçmişini getirir
+     * GET /v1/api/superadmin/audit-logs
+     */
+    public static String getAuditLogs(TokenDTO accessToken, String fromDate, String toDate, String action) throws IOException {
+        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/audit-logs?";
+        
+        if (fromDate != null && !fromDate.isEmpty()) {
+            endpoint += "fromDate=" + fromDate + "&";
+        }
+        if (toDate != null && !toDate.isEmpty()) {
+            endpoint += "toDate=" + toDate + "&";
+        }
+        if (action != null && !action.isEmpty()) {
+            endpoint += "action=" + action + "&";
+        }
+        
+        // Remove trailing &
+        if (endpoint.endsWith("&")) {
+            endpoint = endpoint.substring(0, endpoint.length() - 1);
+        }
+        
+        URL url = new URL(endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            if (code == 200) {
+                return response.toString();
+            } else {
+                String errorMsg = extractJsonMessage(response.toString());
+                throw new IOException(errorMsg != null ? errorMsg : "Audit log verileri alınamadı: " + code);
+            }
+        }
+    }
 }
