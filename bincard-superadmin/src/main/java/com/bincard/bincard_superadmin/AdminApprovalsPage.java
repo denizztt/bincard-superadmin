@@ -1,6 +1,7 @@
 package com.bincard.bincard_superadmin;
 
 import javafx.application.HostServices;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -18,6 +19,8 @@ import javafx.stage.Stage;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class AdminApprovalsPage extends SuperadminPageBase {
@@ -191,43 +194,159 @@ public class AdminApprovalsPage extends SuperadminPageBase {
     }
     
     private void loadAdminRequests() {
-        // Gerçek uygulamada API'dan verileri çekersiniz
-        // Şimdilik demo verilerle dolduralım
         statusLabel.setText("Admin onay istekleri yükleniyor...");
         
         CompletableFuture.supplyAsync(() -> {
-            // API'dan verileri çekme simülasyonu
             try {
-                Thread.sleep(1000); // Simülasyon için gecikme
-                
-                // Demo veriler - Gerçek uygulamada API'dan gelecek
-                ObservableList<AdminRequest> requests = FXCollections.observableArrayList();
-                requests.add(new AdminRequest("1", "Ahmet Yılmaz", "ahmet.yilmaz@mail.com", "+905551234567", "2025-06-30 10:15", "Beklemede"));
-                requests.add(new AdminRequest("2", "Mehmet Demir", "mehmet.demir@mail.com", "+905552345678", "2025-07-01 14:30", "Beklemede"));
-                requests.add(new AdminRequest("3", "Ayşe Kara", "ayse.kara@mail.com", "+905553456789", "2025-07-02 09:45", "Onaylandı"));
-                requests.add(new AdminRequest("4", "Fatma Şahin", "fatma.sahin@mail.com", "+905554567890", "2025-07-02 16:20", "Reddedildi"));
-                requests.add(new AdminRequest("5", "Ali Öztürk", "ali.ozturk@mail.com", "+905555678901", "2025-07-03 08:10", "Beklemede"));
-                
-                return requests;
+                // Gerçek API'dan verileri çek
+                String response = ApiClientFX.getPendingAdminRequests(accessToken, 0, 50);
+                return parseAdminRequestsResponse(response);
             } catch (Exception e) {
-                throw new RuntimeException("Admin istekleri yüklenirken hata oluştu", e);
+                System.err.println("Admin istekleri yüklenirken hata: " + e.getMessage());
+                e.printStackTrace();
+                return new ArrayList<AdminRequest>();
             }
-        }).thenAcceptAsync(requests -> {
-            // UI thread'inde çalış
-            tableView.setItems(requests);
-            statusLabel.setText("Son güncelleme: " + 
-                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss")));
-        }, javafx.application.Platform::runLater).exceptionally(e -> {
-            javafx.application.Platform.runLater(() -> {
-                statusLabel.setText("Hata: " + e.getMessage());
-                showErrorAlert("Admin İstekleri Yüklenemedi", "Admin istekleri yüklenirken bir hata oluştu: " + e.getMessage());
+        }).thenAccept(requests -> {
+            Platform.runLater(() -> {
+                ObservableList<AdminRequest> requestList = FXCollections.observableArrayList(requests);
+                tableView.setItems(requestList);
+                
+                if (requests.isEmpty()) {
+                    statusLabel.setText("Bekleyen admin onay isteği bulunmamaktadır.");
+                } else {
+                    statusLabel.setText(requests.size() + " adet bekleyen admin onay isteği bulundu.");
+                }
+            });
+        }).exceptionally(throwable -> {
+            Platform.runLater(() -> {
+                statusLabel.setText("Veriler yüklenirken bir hata oluştu: " + throwable.getMessage());
+                System.err.println("Veri yükleme hatası: " + throwable.getMessage());
+                throwable.printStackTrace();
             });
             return null;
         });
     }
     
+    /**
+     * API'dan gelen JSON response'u AdminRequest listesine çevirir
+     */
+    private java.util.List<AdminRequest> parseAdminRequestsResponse(String jsonResponse) {
+        java.util.List<AdminRequest> requests = new ArrayList<>();
+        
+        try {
+            // JSON response'u parse et
+            // Backend'den gelen format: {"success": true, "data": [...], "message": "..."}
+            
+            if (jsonResponse.contains("\"data\":[")) {
+                String dataSection = jsonResponse.split("\"data\":")[1];
+                if (dataSection.startsWith("[")) {
+                    dataSection = dataSection.substring(1); // [ kaldır
+                    int endIndex = dataSection.lastIndexOf("]");
+                    if (endIndex > 0) {
+                        dataSection = dataSection.substring(0, endIndex);
+                    }
+                    
+                    // Her bir admin request objesini parse et
+                    String[] requestObjects = dataSection.split("\\},\\s*\\{");
+                    
+                    for (String requestStr : requestObjects) {
+                        // { ve } karakterlerini temizle
+                        requestStr = requestStr.replace("{", "").replace("}", "");
+                        
+                        AdminRequest request = parseAdminRequestObject(requestStr);
+                        if (request != null) {
+                            requests.add(request);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("JSON parse hatası: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return requests;
+    }
+    
+    /**
+     * Tek bir admin request objesini parse eder
+     */
+    private AdminRequest parseAdminRequestObject(String requestStr) {
+        try {
+            String id = extractJsonValue(requestStr, "id");
+            String name = extractJsonValue(requestStr, "name");
+            String surname = extractJsonValue(requestStr, "surname");
+            String email = extractJsonValue(requestStr, "email");
+            String telephone = extractJsonValue(requestStr, "telephone");
+            String createdAt = extractJsonValue(requestStr, "createdAt");
+            String status = extractJsonValue(requestStr, "status");
+            
+            // Tam adı oluştur
+            String fullName = (name != null ? name : "") + " " + (surname != null ? surname : "");
+            fullName = fullName.trim();
+            
+            // Tarihi formatla
+            String formattedDate = formatDate(createdAt);
+            
+            return new AdminRequest(
+                id != null ? id : "0", 
+                fullName, 
+                email != null ? email : "", 
+                telephone != null ? telephone : "", 
+                formattedDate, 
+                status != null ? status : "Beklemede"
+            );
+        } catch (Exception e) {
+            System.err.println("Admin request parse hatası: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * JSON string'den değer çıkarır
+     */
+    private String extractJsonValue(String json, String key) {
+        String searchKey = "\"" + key + "\":";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) return null;
+        
+        startIndex += searchKey.length();
+        
+        // Değer bir string mi?
+        if (startIndex < json.length() && json.charAt(startIndex) == '"') {
+            startIndex++; // " karakterini atla
+            int endIndex = json.indexOf('"', startIndex);
+            if (endIndex != -1) {
+                return json.substring(startIndex, endIndex);
+            }
+        } else {
+            // Sayısal değer
+            int endIndex = json.indexOf(',', startIndex);
+            if (endIndex == -1) endIndex = json.length();
+            String value = json.substring(startIndex, endIndex).trim();
+            return value;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * ISO date formatını kullanıcı dostu formata çevirir
+     */
+    private String formatDate(String isoDate) {
+        if (isoDate == null) return "";
+        
+        try {
+            // ISO format: 2025-07-08T10:30:00
+            LocalDateTime dateTime = LocalDateTime.parse(isoDate.split("\\.")[0]); // Millisecond kısmını kaldır
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+            return dateTime.format(formatter);
+        } catch (Exception e) {
+            return isoDate; // Parse edilemezse orjinal formatı döndür
+        }
+    }
+    
     private void approveAdminRequest(AdminRequest request) {
-        // Gerçek uygulamada API çağrısı yapılacak
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("Onay İsteği");
         confirmAlert.setHeaderText("Admin Onayı");
@@ -239,11 +358,13 @@ public class AdminApprovalsPage extends SuperadminPageBase {
                 
                 CompletableFuture.runAsync(() -> {
                     try {
-                        // API isteği simülasyonu
-                        Thread.sleep(1000);
+                        // Gerçek API çağrısı
+                        long adminId = Long.parseLong(request.getId());
+                        String apiResponse = ApiClientFX.approveAdminRequest(accessToken, adminId);
+                        System.out.println("Admin onay API yanıtı: " + apiResponse);
                         
                         // UI thread'inde güncelleme yap
-                        javafx.application.Platform.runLater(() -> {
+                        Platform.runLater(() -> {
                             request.setStatus("Onaylandı");
                             tableView.refresh();
                             showSuccessAlert("İşlem Başarılı", "Admin hesabı başarıyla onaylandı.");
@@ -251,9 +372,10 @@ public class AdminApprovalsPage extends SuperadminPageBase {
                                     LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss")));
                         });
                     } catch (Exception e) {
-                        javafx.application.Platform.runLater(() -> {
-                            showErrorAlert("Onay Hatası", "Admin onaylanırken bir hata oluştu: " + e.getMessage());
-                            statusLabel.setText("Hata: Admin onaylanamadı");
+                        System.err.println("Admin onay hatası: " + e.getMessage());
+                        Platform.runLater(() -> {
+                            statusLabel.setText("Onay işlemi başarısız: " + e.getMessage());
+                            showErrorAlert("Onay İşlemi Başarısız", "Admin onaylanırken bir hata oluştu: " + e.getMessage());
                         });
                     }
                 });
@@ -262,7 +384,6 @@ public class AdminApprovalsPage extends SuperadminPageBase {
     }
     
     private void rejectAdminRequest(AdminRequest request) {
-        // Gerçek uygulamada API çağrısı yapılacak
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("Red İsteği");
         confirmAlert.setHeaderText("Admin Reddi");
@@ -270,15 +391,17 @@ public class AdminApprovalsPage extends SuperadminPageBase {
         
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                statusLabel.setText("Admin talebi reddediliyor...");
+                statusLabel.setText("Admin reddediliyor...");
                 
                 CompletableFuture.runAsync(() -> {
                     try {
-                        // API isteği simülasyonu
-                        Thread.sleep(1000);
+                        // Gerçek API çağrısı
+                        long adminId = Long.parseLong(request.getId());
+                        String apiResponse = ApiClientFX.rejectAdminRequest(accessToken, adminId);
+                        System.out.println("Admin red API yanıtı: " + apiResponse);
                         
                         // UI thread'inde güncelleme yap
-                        javafx.application.Platform.runLater(() -> {
+                        Platform.runLater(() -> {
                             request.setStatus("Reddedildi");
                             tableView.refresh();
                             showSuccessAlert("İşlem Başarılı", "Admin hesabı başarıyla reddedildi.");
@@ -286,9 +409,10 @@ public class AdminApprovalsPage extends SuperadminPageBase {
                                     LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss")));
                         });
                     } catch (Exception e) {
-                        javafx.application.Platform.runLater(() -> {
-                            showErrorAlert("Red Hatası", "Admin talebi reddedilirken bir hata oluştu: " + e.getMessage());
-                            statusLabel.setText("Hata: Admin talebi reddedilemedi");
+                        System.err.println("Admin red hatası: " + e.getMessage());
+                        Platform.runLater(() -> {
+                            statusLabel.setText("Red işlemi başarısız: " + e.getMessage());
+                            showErrorAlert("Red İşlemi Başarısız", "Admin reddedilirken bir hata oluştu: " + e.getMessage());
                         });
                     }
                 });

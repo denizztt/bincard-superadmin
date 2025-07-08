@@ -70,6 +70,9 @@ public class SuperadminDashboardFX {
         // İstatistikler
         MenuItem stats = new MenuItem("İstatistikler", accentColor3, FontAwesomeSolid.CHART_BAR, "Statistics");
         
+        // Denetim Kayıtları
+        MenuItem auditLogs = new MenuItem("Denetim Kayıtları", accentColor4, FontAwesomeSolid.CLIPBOARD_LIST, "AuditLogs");
+        
         // Kullanıcılar menüsü
         MenuItem usersMenu = new MenuItem("Kullanıcılar", accentColor4, FontAwesomeSolid.USERS);
         usersMenu.addSubItem(new MenuItem("Kullanıcı Ekle", accentColor4, FontAwesomeSolid.USER_PLUS, "UserAdd"));
@@ -93,6 +96,7 @@ public class SuperadminDashboardFX {
         
         // Raporlar menüsü
         MenuItem reportsMenu = new MenuItem("Raporlar", accentColor2, FontAwesomeSolid.FILE_ALT);
+        reportsMenu.addSubItem(new MenuItem("Gelir Raporları", accentColor2, FontAwesomeSolid.CHART_LINE, "IncomeReports"));
         reportsMenu.addSubItem(new MenuItem("Günlük Raporlar", accentColor2, FontAwesomeSolid.CALENDAR_DAY, "DailyReports"));
         reportsMenu.addSubItem(new MenuItem("Aylık Raporlar", accentColor2, FontAwesomeSolid.CALENDAR_ALT, "MonthlyReports"));
         reportsMenu.addSubItem(new MenuItem("Yıllık Raporlar", accentColor2, FontAwesomeSolid.CALENDAR, "YearlyReports"));
@@ -106,6 +110,7 @@ public class SuperadminDashboardFX {
         
         // Alfabetik sırada menü listesine ekle
         menuItems.add(approvals);  // Admin Onayları
+        menuItems.add(auditLogs);  // Denetim Kayıtları
         menuItems.add(stopsMenu);  // Duraklar
         menuItems.add(newsMenu);   // Haberler
         menuItems.add(stats);      // İstatistikler
@@ -207,6 +212,7 @@ public class SuperadminDashboardFX {
         
         // Scene oluştur
         Scene scene = new Scene(root, 1200, 800);
+        scene.getStylesheets().clear(); // Varsayılan stil dosyalarını temizle
         stage.setScene(scene);
         stage.setTitle("Bincard Superadmin Paneli");
         stage.setResizable(true);
@@ -224,18 +230,27 @@ public class SuperadminDashboardFX {
         header.setSpacing(20);
         header.setStyle("-fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 1);");
         
+        // Sol taraf - Dashboard başlığı
+        Label dashboardTitle = new Label("Ana Sayfa");
+        dashboardTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
+        dashboardTitle.setTextFill(Color.web("#2d3436"));
+        dashboardTitle.setPadding(new Insets(0, 0, 0, 0));
+        
+        // Orta kısım - boş alan için spacer
+        HBox spacer = new HBox();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
         // Sağ taraf - kullanıcı bilgisi ve çıkış
         HBox rightSide = new HBox();
-        rightSide.setAlignment(Pos.CENTER_RIGHT); // Yatay sağa hizalama
+        rightSide.setAlignment(Pos.CENTER_RIGHT);
         rightSide.setSpacing(15);
-        rightSide.setPrefWidth(Integer.MAX_VALUE);
         
         // Bildirim ikonu - tıklanabilir ve mavi renkli
         FontIcon notificationIcon = new FontIcon(FontAwesomeSolid.BELL);
         notificationIcon.setIconSize(18);
         notificationIcon.setIconColor(Color.web("#4e54c8"));
         HBox notificationBox = new HBox(notificationIcon);
-        notificationBox.setAlignment(Pos.CENTER); // Dikey hizalama için
+        notificationBox.setAlignment(Pos.CENTER);
         notificationBox.setPadding(new Insets(0, 10, 0, 0));
         notificationBox.setStyle("-fx-cursor: hand;");
         
@@ -273,7 +288,8 @@ public class SuperadminDashboardFX {
         
         rightSide.getChildren().addAll(notificationBox, userInfoBox, logoutButton);
         
-        header.getChildren().add(rightSide);
+        // Header'a öğeleri ekle - sadece gereken öğeler
+        header.getChildren().addAll(dashboardTitle, spacer, rightSide);
         return header;
     }
     
@@ -420,24 +436,23 @@ public class SuperadminDashboardFX {
                 // Final değişken olarak tanımla (lambda içinde kullanabilmek için)
                 final Label finalArrowLabel = arrowLabel;
                 
-                // Ana menü tıklama olayı (alt menüyü göster/gizle)
+                // Ana menü tıklama olayı (alt menüyü göster/gizle) - Accordion mantığı ile
                 mainMenuItem.setOnMouseClicked(e -> {
                     boolean isVisible = subMenuBox.isVisible();
-                    subMenuBox.setVisible(!isVisible);
-                    subMenuBox.setManaged(!isVisible);
                     
-                    // Ana menü arka plan rengini değiştir (açık/kapalı durumu göstermek için)
+                    // Accordion mantığı: Önce tüm alt menüleri kapat
+                    closeAllSubMenus();
+                    
+                    // Eğer menü kapalıysa aç, açıksa aç (çünkü yukarıda kapattık)
                     if (!isVisible) {
+                        subMenuBox.setVisible(true);
+                        subMenuBox.setManaged(true);
+                        
+                        // Ana menü arka plan rengini değiştir (açık durumu göstermek için)
                         mainMenuItem.setStyle("-fx-background-color: " + menuItem.getColor() + "; -fx-cursor: hand;");
                         // Ok işaretini çevir (açık)
                         if (finalArrowLabel != null) {
                             finalArrowLabel.setText("▲");
-                        }
-                    } else {
-                        mainMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-                        // Ok işaretini çevir (kapalı)
-                        if (finalArrowLabel != null) {
-                            finalArrowLabel.setText("▼");
                         }
                     }
                 });
@@ -584,13 +599,16 @@ public class SuperadminDashboardFX {
         statsContainer.setAlignment(Pos.CENTER);
         statsContainer.setPadding(new Insets(30, 0, 0, 0));
         
-        // Demo istatistik kartları
+        // İstatistik kartları - API'dan veri yüklenene kadar demo değerler
         VBox totalUsers = createStatCard("Toplam Kullanıcılar", "12,543", "#4e54c8", "\uf0c0");
         VBox activeUsers = createStatCard("Aktif Kullanıcılar", "8,729", "#2ecc71", "\uf0c1");
         VBox totalBuses = createStatCard("Toplam Otobüsler", "342", "#3498db", "\uf207");
-        VBox totalDrivers = createStatCard("Toplam Şoförler", "562", "#e74c3c", "\uf2bd");
+        VBox dailyIncome = createStatCard("Günlük Gelir", "₺0", "#e74c3c", "\uf155");
         
-        statsContainer.getChildren().addAll(totalUsers, activeUsers, totalBuses, totalDrivers);
+        statsContainer.getChildren().addAll(totalUsers, activeUsers, totalBuses, dailyIncome);
+        
+        // Gelir verilerini API'dan yükle ve kartları güncelle
+        loadDashboardData(dailyIncome);
         
         content.getChildren().addAll(welcomeTitle, description, timeLabel, statsContainer);
         
@@ -627,6 +645,77 @@ public class SuperadminDashboardFX {
         return statCard;
     }
     
+    /**
+     * Dashboard verilerini API'dan yükler
+     */
+    private void loadDashboardData(VBox dailyIncomeCard) {
+        // Gelir verilerini asenkron olarak yükle
+        java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+            try {
+                String response = ApiClientFX.getIncomeSummary(accessToken);
+                return parseIncomeSummary(response);
+            } catch (Exception e) {
+                System.err.println("Dashboard verileri yüklenirken hata: " + e.getMessage());
+                return null;
+            }
+        }).thenAccept(incomeData -> {
+            if (incomeData != null) {
+                javafx.application.Platform.runLater(() -> {
+                    // Günlük gelir kartını güncelle
+                    Label valueLabel = (Label) dailyIncomeCard.getChildren().get(1);
+                    valueLabel.setText(String.format("₺%,.0f", incomeData[0])); // dailyIncome
+                });
+            }
+        });
+    }
+    
+    /**
+     * Gelir API yanıtını parse eder
+     */
+    private double[] parseIncomeSummary(String jsonResponse) {
+        try {
+            double[] result = new double[4]; // daily, weekly, monthly, total
+            
+            if (jsonResponse.contains("\"data\":{")) {
+                String dataSection = jsonResponse.split("\"data\":")[1];
+                if (dataSection.startsWith("{")) {
+                    int endIndex = dataSection.lastIndexOf("}");
+                    if (endIndex > 0) {
+                        dataSection = dataSection.substring(1, endIndex);
+                    }
+                    
+                    // JSON değerlerini parse et
+                    result[0] = extractDoubleFromJson(dataSection, "dailyIncome");
+                    result[1] = extractDoubleFromJson(dataSection, "weeklyIncome");
+                    result[2] = extractDoubleFromJson(dataSection, "monthlyIncome");
+                    result[3] = extractDoubleFromJson(dataSection, "totalIncome");
+                }
+            }
+            
+            return result;
+        } catch (Exception e) {
+            System.err.println("Gelir parse hatası: " + e.getMessage());
+            return new double[]{0, 0, 0, 0};
+        }
+    }
+    
+    /**
+     * JSON string'den double değer çıkarır
+     */
+    private double extractDoubleFromJson(String json, String key) {
+        try {
+            String pattern = "\"" + key + "\"\\s*:\\s*([0-9]+\\.?[0-9]*)";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                return Double.parseDouble(m.group(1));
+            }
+        } catch (Exception e) {
+            System.err.println("Double değer parse hatası: " + e.getMessage());
+        }
+        return 0.0;
+    }
+    
     private void navigateToSection(String section) {
         System.out.println(section + " bölümüne yönlendiriliyor...");
         
@@ -645,6 +734,9 @@ public class SuperadminDashboardFX {
                 case "Admin Onayları":
                 case "AdminApprovals":
                     new AdminApprovalsPage(stage, accessToken, refreshToken, hostServices);
+                    break;
+                case "AuditLogs":
+                    new AuditLogsPage(stage, accessToken, refreshToken);
                     break;
                 case "Statistics":
                     showUnderConstructionAlert("İstatistikler");
@@ -735,6 +827,9 @@ public class SuperadminDashboardFX {
                     break;
                     
                 // Rapor alt sayfaları
+                case "IncomeReports":
+                    new IncomeReportsPage(stage, accessToken, refreshToken);
+                    break;
                 case "DailyReports":
                     showUnderConstructionAlert("Günlük Raporlar");
                     break;
@@ -1023,6 +1118,74 @@ public class SuperadminDashboardFX {
                             Label label = (Label) child;
                             if (label.getText().equals(title)) {
                                 return container;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Tüm alt menüleri kapatır - Accordion mantığı için
+     */
+    private void closeAllSubMenus() {
+        for (Map.Entry<String, VBox> entry : subMenuContainers.entrySet()) {
+            String menuTitle = entry.getKey();
+            VBox subMenuBox = entry.getValue();
+            
+            // Alt menüyü kapat
+            subMenuBox.setVisible(false);
+            subMenuBox.setManaged(false);
+            
+            // Ana menü öğesinin stilini sıfırla ve ok işaretini aşağı çevir
+            // Ana menü öğesini bul
+            for (MenuItem menuItem : menuItems) {
+                if (menuItem.getTitle().equals(menuTitle) && menuItem.hasSubItems()) {
+                    // Ana menü öğesinin HBox'ını bul
+                    HBox mainMenuItem = findMainMenuItemBox(menuTitle);
+                    if (mainMenuItem != null) {
+                        // Arka plan stilini şeffaf yap
+                        mainMenuItem.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
+                        
+                        // Ok işaretini aşağı çevir
+                        for (Node child : mainMenuItem.getChildren()) {
+                            if (child instanceof Label && (((Label) child).getText().equals("▲") || ((Label) child).getText().equals("▼"))) {
+                                ((Label) child).setText("▼");
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Belirtilen menü başlığına sahip ana menü öğesinin HBox'ını bulur
+     */
+    private HBox findMainMenuItemBox(String menuTitle) {
+        // Bu metod sidebar içindeki VBox'ları dolaşır ve doğru ana menü öğesini bulur
+        // Sidebar'daki tüm çocukları kontrol et
+        if (stage != null && stage.getScene() != null && stage.getScene().getRoot() instanceof BorderPane) {
+            BorderPane root = (BorderPane) stage.getScene().getRoot();
+            if (root.getLeft() instanceof VBox) {
+                VBox sidebar = (VBox) root.getLeft();
+                for (Node child : sidebar.getChildren()) {
+                    if (child instanceof VBox) {
+                        VBox menuContainer = (VBox) child;
+                        if (menuContainer.getChildren().size() > 0 && menuContainer.getChildren().get(0) instanceof HBox) {
+                            HBox mainMenuItem = (HBox) menuContainer.getChildren().get(0);
+                            // Bu ana menü öğesinin başlığını bul
+                            for (Node menuChild : mainMenuItem.getChildren()) {
+                                if (menuChild instanceof Label) {
+                                    Label titleLabel = (Label) menuChild;
+                                    if (titleLabel.getText().equals(menuTitle)) {
+                                        return mainMenuItem;
+                                    }
+                                }
                             }
                         }
                     }

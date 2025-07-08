@@ -8,10 +8,15 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+
+// İkon destekleri için import
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 /**
  * Tüm superadmin sayfaları için temel sınıf.
@@ -54,6 +59,7 @@ public abstract class SuperadminPageBase {
         
         // Scene oluştur
         Scene scene = new Scene(root, 1200, 800);
+        scene.getStylesheets().clear(); // Varsayılan stil dosyalarını temizle
         stage.setScene(scene);
         stage.setTitle(pageTitle + " - Bincard Superadmin");
         stage.setResizable(true);
@@ -81,10 +87,25 @@ public abstract class SuperadminPageBase {
         header.setSpacing(20);
         header.setStyle("-fx-background-color: " + mainColor + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);");
         
-        // Ana sayfaya dönüş butonu
-        Button homeButton = new Button("Ana Sayfa");
-        homeButton.setStyle("-fx-background-color: " + accentColor2 + "; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;");
-        homeButton.setOnAction(e -> goToHomePage());
+        // Geri dön butonu - ikon ile
+        FontIcon backIcon = new FontIcon(FontAwesomeSolid.ARROW_LEFT);
+        backIcon.setIconSize(18);
+        backIcon.setIconColor(Color.WHITE);
+        
+        Button backButton = new Button();
+        backButton.setGraphic(backIcon);
+        backButton.setStyle("-fx-background-color: " + accentColor1 + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);");
+        backButton.setOnAction(e -> goToHomePage());
+        
+        // Hover efektleri ekle
+        backButton.setOnMouseEntered(e -> {
+            backButton.setStyle("-fx-background-color: " + accentColor2 + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);");
+            backIcon.setIconColor(Color.WHITE);
+        });
+        backButton.setOnMouseExited(e -> {
+            backButton.setStyle("-fx-background-color: " + accentColor1 + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);");
+            backIcon.setIconColor(Color.WHITE);
+        });
         
         // Sayfa başlığı
         Label title = new Label(pageTitle);
@@ -92,11 +113,14 @@ public abstract class SuperadminPageBase {
         title.setTextFill(Color.WHITE);
         title.setPadding(new Insets(0, 0, 0, 20));
         
+        // Orta kısım - boş alan için spacer
+        HBox spacer = new HBox();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
         // Sağ taraf - kullanıcı bilgisi ve çıkış
         HBox rightSide = new HBox();
         rightSide.setAlignment(Pos.CENTER_RIGHT);
         rightSide.setSpacing(15);
-        rightSide.setPrefWidth(Integer.MAX_VALUE);
         
         Label userInfo = new Label("Superadmin");
         userInfo.setFont(Font.font("Montserrat", FontWeight.NORMAL, 16));
@@ -108,7 +132,8 @@ public abstract class SuperadminPageBase {
         
         rightSide.getChildren().addAll(userInfo, logoutButton);
         
-        header.getChildren().addAll(homeButton, title, rightSide);
+        // Header'a öğeleri ekle - sadece gereken öğeler
+        header.getChildren().addAll(backButton, title, spacer, rightSide);
         return header;
     }
     

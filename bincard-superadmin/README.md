@@ -4,9 +4,27 @@ Bu proje, Bincard yönetim sisteminin **Superadmin** panelidir. Orijinal admin p
 
 ![Bincard Superadmin Panel](https://via.placeholder.com/800x400?text=Bincard+Superadmin+Panel)
 
-## Özellikler
+## ✨ Son Güncellemeler
 
-### Kimlik Doğrulama ve Güvenlik
+### 🔌 Backend API Entegrasyonu (Temmuz 2025)
+- **Gelir Raporları**: Günlük, haftalık, aylık gelir API'leri entegre edildi
+- **Denetim Kayıtları**: Audit logs sayfası ve filtreleme özellikleri eklendi
+- **Admin Onayları**: Gerçek API ile onaylama/reddetme işlemleri
+- **Dashboard İyileştirmeleri**: Canlı gelir kartları ve real-time veriler
+- **Yeni Sayfalar**: IncomeReportsPage ve AuditLogsPage eklendi
+
+### 🎨 UI/UX İyileştirmeleri (Temmuz 2025)
+- **Header Optimizasyonu**: Dashboard ve alt sayfalardaki gereksiz UI elemanları kaldırıldı
+- **Navigasyon İyileştirmeleri**: Geri dön butonu ikon olarak (←) değiştirildi
+- **Bildirim Sistemi**: Dashboard'da çan ikonu ile bildirim butonu eklendi
+- **Layout Düzenlemeleri**: Header yapısı spacer ile daha düzenli hizalandı
+- **Modern Hover Efektleri**: Butonlara gelişmiş animasyonlar eklendi
+- **Accordion Menü**: Sol menüde bir alt menü açıldığında diğerleri otomatik kapanır
+- **Menü UX İyileştirmeleri**: Ok işaretleri (▲/▼) accordion durumuna göre güncellenir
+
+## 🔥 Özellikler
+
+### 🔐 Kimlik Doğrulama ve Güvenlik
 - Superadmin girişi (telefon + şifre)
 - SMS ile 6 haneli doğrulama kodu sistemi
 - Token tabanlı güvenlik (JWT)
@@ -14,166 +32,365 @@ Bu proje, Bincard yönetim sisteminin **Superadmin** panelidir. Orijinal admin p
 - Otomatik giriş desteği (beni hatırla)
 - Backend'den gelen hata mesajlarının kullanıcıya gösterilmesi
 
-### Arayüz ve Tasarım
-- Modern ve sade soft renkli arayüz
-- Sürekli tam ekran modunda çalışma
-- Açılır/kapanır alt menü sistemi
-- Her bölümde mantıklı alt başlıklar (Ekle, Sil, Düzenle, Görüntüle)
-- Responsive tasarım
-- Kullanıcı deneyimi odaklı gezinme
+### 🎨 Arayüz ve Tasarım
+- **Modern ve Temiz Header**: Gereksiz öğeler kaldırıldı
+- **Dashboard**: Sol üstte "Ana Sayfa" başlığı, sağ üstte bildirim butonu
+- **Alt Sayfalar**: Sol üstte ← geri dön ikonu, temiz layout
+- **Responsive Design**: Tüm ekran boyutlarına uyumlu
+- **Sürekli Tam Ekran**: Tam ekran modunda optimized çalışma
+- **Accordion Menü**: Sol menüde bir alt menü açıldığında diğerleri otomatik kapanır
+- **Soft Renkli Tema**: Göze rahatlık sağlayan renk paleti
 
-### Yönetim Özellikleri
+### 📊 Yönetim Özellikleri
 - **Otobüs Yönetimi**
-  - Otobüs Ekle
-  - Otobüsleri Görüntüle
-  - Otobüs Düzenle
-  - Otobüs Sil
+  - Otobüs Ekle/Sil/Düzenle/Görüntüle
+  - Plaka bazlı arama ve filtreleme
 
 - **Şoför Yönetimi**
-  - Şoför Ekle
-  - Şoförleri Görüntüle
-  - Şoför Düzenle
-  - Şoför Sil
+  - Şoför Ekle/Sil/Düzenle/Görüntüle
+  - Ad ve telefon bazlı arama
 
-- **Haber Yönetimi**
-  - Haber Ekle
-  - Haberleri Görüntüle
-  - Haber Düzenle
-  - Haber Sil
+- **📰 Haber Yönetimi**
+  - Haber Ekle/Sil/Düzenle/Görüntüle
+  - Görsel upload desteği
+  - Platform bazlı filtreleme
+  - Tarih aralığı belirleme
+  - Geri bildirim sistemi
 
-- **Otobüs Rota Yönetimi**
-  - Rota Ekle
-  - Rotaları Görüntüle
-  - Rota Düzenle
-  - Rota Sil
+- **🚌 Otobüs Rota Yönetimi**
+  - Rota Ekle/Sil/Düzenle/Görüntüle
+  - Durak bazlı rota planlama
 
-- **Durak Yönetimi**
-  - Durak Ekle
-  - Durakları Görüntüle
-  - Durak Düzenle
-  - Durak Sil
+- **🚏 Durak Yönetimi**
+  - Durak Ekle/Sil/Düzenle/Görüntüle
+  - Konum bazlı yönetim
 
-- **Kullanıcı Yönetimi**
-  - Kullanıcı Ekle
-  - Kullanıcıları Görüntüle
-  - Kullanıcı Düzenle
-  - Kullanıcı Sil
+- **👥 Kullanıcı Yönetimi**
+  - Kullanıcı Ekle/Sil/Düzenle/Görüntüle
+  - Yetki seviyesi belirleme
 
-- **Raporlama**
-  - Günlük Raporlar
-  - Aylık Raporlar
-  - Yıllık Raporlar
+- **📈 Raporlama**
+  - Günlük/Aylık/Yıllık Raporlar
+  - İstatistiksel veriler
 
-- **Admin Onayları**
-  - Bekleyen Admin Başvurularını Görüntüleme
-  - Admin Başvurularını Onaylama/Reddetme
+- **✅ Admin Onayları**
+  - Bekleyen admin başvurularını görüntüleme
+  - Onaylama/Reddetme işlemleri (Gerçek API entegreli)
+  - Real-time durum güncellemeleri
+  - JSON parse ve hata yönetimi
 
-- **İstatistikler**
-  - Sistem İstatistikleri Görüntüleme
+- **💰 Gelir Raporları**
+  - Günlük/Haftalık/Aylık gelir analizi
+  - Gelir dağılım grafikları (Pasta ve Çizgi)
+  - Real-time API veri çekme
+  - Dashboard'da canlı gelir kartları
 
-## Teknik Detaylar
-- **Dil ve Framework:** Java ve JavaFX
+- **📋 Denetim Kayıtları (Audit Logs)**
+  - Tüm sistem aktivitelerini görüntüleme
+  - Tarih aralığı ve aksiyon filtreleme
+  - Renk kodlu aktivite türleri
+  - IP adresi ve detaylı log bilgileri
+
+- **📊 İstatistikler**
+  - Dashboard ana sayfa kartları
+  - Sistem geneli istatistikler
+## 🛠️ Teknik Detaylar
+- **Dil ve Framework:** Java 21+ ve JavaFX
 - **Mimari:** Model-View-Controller (MVC)
 - **API İletişimi:** RESTful API (JSON)
+- **UI Kütüphaneleri:** 
+  - FontAwesome 5 ikonları
+  - Kordamp ikonli desteği
+  - Modern CSS styling
+- **Güvenlik:** 
+  - JWT token authentication
+  - Şifrelenmiş token storage
+  - Secure API communication
 - **Gereksinimler:**
-  - Java 11 veya üzeri
-  - JavaFX kütüphaneleri
-  - Maven
+  - Java 21 veya üzeri
+  - JavaFX 21+ kütüphaneleri
+  - Maven 3.8+
   - Backend API bağlantısı
 
-## Kurulum
+## 📦 Kurulum
 
 ### Sistem Gereksinimleri
-- Java 11 veya üzeri
-- Maven 3.6 veya üzeri
-- JavaFX kütüphaneleri
-- En az 4GB RAM, 1GB boş disk alanı
-- Bir backend API (varsayılan: `http://localhost:8080/v1/api`)
+- ☑️ Java 21 veya üzeri
+- ☑️ Maven 3.8 veya üzeri
+- ☑️ JavaFX kütüphaneleri (otomatik indirilir)
+- ☑️ En az 4GB RAM, 1GB boş disk alanı
+- ☑️ Backend API erişimi (varsayılan: `http://localhost:8080/v1/api`)
 
-### Derleme
+### 🔧 Derleme
 Projeyi derlemek için, proje klasöründe şu komutları kullanabilirsiniz:
 
-```sh
+```bash
 # Maven ile derleme
+mvn clean compile
+
+# Tam paket oluşturma
 mvn clean package
 
 # Veya hazır script ile (Windows)
 .\build.bat
 ```
 
-### Çalıştırma
-```sh
+### 🚀 Çalıştırma
+```bash
 # Maven ile çalıştırma
 mvn javafx:run
 
 # JAR dosyasını doğrudan çalıştırma
-java -jar target/bincard-superadmin-1.0.jar
+java --module-path /path/to/javafx/lib --add-modules javafx.controls,javafx.fxml -jar target/bincard-superadmin-1.0.jar
 
 # Veya hazır script ile (Windows)
 .\run.bat
 ```
 
-## Proje Yapısı
+## 📂 Proje Yapısı
 ```
 bincard-superadmin/
 ├── src/
 │   └── main/
 │       ├── java/
+│       │   ├── module-info.java (Java modül tanımları)
 │       │   └── com/
 │       │       └── bincard/
 │       │           └── bincard_superadmin/
-│       │               ├── SuperadminDashboardFX.java (Ana dashboard)
-│       │               ├── SuperadminLoginFX.java (Giriş ekranı)
-│       │               ├── SuperadminPageBase.java (Tüm sayfaların temel sınıfı)
-│       │               ├── ApiClientFX.java (API istekleri)
-│       │               ├── MenuItem.java (Menü modeli)
-│       │               ├── BusesPage.java (Otobüsler sayfası)
-│       │               ├── DriversPage.java (Şoförler sayfası)
-│       │               ├── ...
+│       │               ├── 🏠 SuperadminDashboardFX.java (Ana dashboard)
+│       │               ├── 🔐 SuperadminLoginFX.java (Giriş ekranı)
+│       │               ├── 📄 SuperadminPageBase.java (Temel sayfa sınıfı)
+│       │               ├── 🌐 ApiClientFX.java (API client)
+│       │               ├── 🔧 TokenSecureStorage.java (Token yönetimi)
+│       │               ├── 📊 MenuItem.java (Menü modeli)
+│       │               ├── 🚌 BusesPage.java (Otobüsler)
+│       │               ├── 👤 DriversPage.java (Şoförler)
+│       │               ├── 📰 NewsPage.java (Haberler)
+│       │               ├── ✅ AdminApprovalsPage.java (Admin onayları)
+│       │               ├── 💰 IncomeReportsPage.java (Gelir raporları)
+│       │               ├── 📋 AuditLogsPage.java (Denetim kayıtları)
+│       │               └── ... (Diğer sayfalar)
 │       └── resources/
+├── target/ (Derleme çıktıları)
 ├── pom.xml (Maven yapılandırması)
-├── build.bat (Windows için derleme script'i)
-├── run.bat (Windows için çalıştırma script'i)
+├── build.bat (Windows derleme script'i)
+├── run.bat (Windows çalıştırma script'i)
+├── mvnw, mvnw.cmd (Maven wrapper)
 └── README.md
 ```
 
-## Ortam Değişkenleri
-- `API_BASE_URL`: Backend API'nin temel URL'i (varsayılan: http://localhost:8080/v1/api)
-- `JAVA_HOME`: Java kurulum dizini
+## ⚙️ Yapılandırma
 
-## Geliştirme için Notlar
-- Yeni bir sayfa eklemek için `SuperadminPageBase` sınıfını extend edin
-- Yeni bir menü öğesi eklemek için `MenuItem` sınıfını kullanın
-- Backend API endpoint'leri için `ApiClientFX` sınıfını kullanın
-- Token yönetimi `TokenDTO` sınıfı ile yapılır
+### Ortam Değişkenleri
+```bash
+# API temel URL'i
+API_BASE_URL=http://localhost:8080/v1/api
 
-## Projeyi GitHub'a Yükleme
-1. Git başlat: `git init`
-2. Dosyaları ekle: `git add .`
-3. Commit: `git commit -m "İlk superadmin commit"`
-4. GitHub'da repo oluştur, adresi ekle: `git remote add origin <repo-url>`
-5. Gönder: `git push -u origin main`
+# Java kurulum dizini
+JAVA_HOME=/path/to/java
 
-## Sürüm Geçmişi
-- **1.0.0** (Temmuz 2025)
-  - İlk resmi sürüm
-  - Açılır/kapanır alt menü sistemi
-  - Soft renkli tasarım ve tam ekran modu
-  - Token tabanlı güvenlik ve otomatik giriş
-  - Admin onayları sayfası
+# JavaFX modül yolu (isteğe bağlı)
+PATH_TO_FX=/path/to/javafx/lib
+```
 
-## Hata Giderme
-- **Java Bulunamadı Hatası**: `build.bat` veya `run.bat` dosyasında JAVA_HOME ayarlanmıştır
-- **Backend Bağlantı Hataları**: API endpoint'in doğru ayarlandığından emin olun
-- **Token Hatası**: Çıkış yapıp tekrar giriş yapın
+### API Endpoint'leri
+```java
+// Kimlik doğrulama
+POST /auth/superadmin-login
+POST /auth/phone-verify
+POST /auth/refresh
 
-## Katkı ve Lisans
-Bu proje özel bir kurum içindir. Katkı için lütfen proje sahibine ulaşın.
+// Admin yönetimi (SuperAdmin Controller)
+GET /v1/api/superadmin/admin-requests/pending
+POST /v1/api/superadmin/admin-requests/{adminId}/approve
+POST /v1/api/superadmin/admin-requests/{adminId}/reject
+
+// Gelir raporları
+GET /v1/api/superadmin/income-summary
+GET /v1/api/superadmin/bus-income/daily
+GET /v1/api/superadmin/bus-income/weekly
+GET /v1/api/superadmin/bus-income/monthly
+
+// Denetim kayıtları
+GET /v1/api/superadmin/audit-logs
+
+// Haber yönetimi
+GET /news/
+POST /news/create
+PUT /news/update
+PUT /news/{id}/soft-delete
+```
+
+## 🔧 Geliştirme Notları
+
+### Yeni Sayfa Ekleme
+1. `SuperadminPageBase` sınıfını extend edin
+2. `createContent()` metodunu implement edin
+3. `SuperadminDashboardFX`'de navigasyona ekleyin
+
+```java
+public class YeniSayfa extends SuperadminPageBase {
+    public YeniSayfa(Stage stage, TokenDTO accessToken, TokenDTO refreshToken) {
+        super(stage, accessToken, refreshToken, "Yeni Sayfa");
+    }
+    
+    @Override
+    protected Node createContent() {
+        // Sayfa içeriğini burada oluşturun
+        return new VBox();
+    }
+}
+```
+
+### Yeni API Endpoint Ekleme
+`ApiClientFX` sınıfına yeni metodlar ekleyin:
+
+```java
+public static String yeniApiCagrisi(TokenDTO accessToken, String parametre) throws IOException {
+    URL url = new URL(BASE_URL + "/endpoint");
+    // API çağrısını implement edin
+}
+```
+## 🐛 Hata Giderme
+
+### Yaygın Sorunlar ve Çözümleri
+
+#### Java/Maven Hataları
+```bash
+# Java bulunamadı hatası
+Error: JAVA_HOME not found
+
+# Çözüm: JAVA_HOME'u ayarlayın
+export JAVA_HOME=/path/to/java  # Linux/Mac
+set JAVA_HOME=C:\Program Files\Java\jdk-21  # Windows
+```
+
+#### API Bağlantı Sorunları
+```bash
+# Backend bağlantı hatası
+IOException: Connection refused
+
+# Çözüm kontrol listesi:
+✅ Backend API çalışıyor mu?
+✅ URL doğru mu? (http://localhost:8080/v1/api)
+✅ Firewall/antivirus engelliyor mu?
+✅ Port 8080 kullanımda mı?
+```
+
+#### Token/Kimlik Doğrulama Hataları
+```bash
+# Token süresi dolmuş
+TokenExpiredException
+
+# Çözüm:
+1. Çıkış yapın (Logout)
+2. Tekrar giriş yapın
+3. Veya uygulamayı yeniden başlatın
+```
+
+#### UI/Görüntü Sorunları
+```bash
+# Tam ekran problemi
+# Çözüm: ESC tuşuna basın
+
+# Font/İkon yüklenmeme
+# Çözüm: İnternet bağlantısını kontrol edin
+
+# 3 nokta simgesi görünüyor
+# Bu sorun güncel sürümde düzeltilmiştir
+```
+
+## 🔄 Sürüm Geçmişi
+
+### v1.3.1 (Temmuz 2025)
+🎨 **Accordion Menü Sistemi**
+- Sol menüde accordion mantığı eklendi
+- Bir alt menü açıldığında diğerleri otomatik kapanır
+- closeAllSubMenus() metodu ile menü kontrolü
+- findMainMenuItemBox() metodu ile menü element bulma
+- Ok işaretleri (▲/▼) accordion durumuna göre güncellenir
+- Menü UX iyileştirmeleri ve stil optimizasyonu
+
+### v1.3.0 (Temmuz 2025)
+🔌 **Backend API Entegrasyonu**
+- Gelir raporları sayfası ve API entegrasyonu
+- Denetim kayıtları (audit logs) sayfası eklendi
+- Admin onayları için gerçek API bağlantıları
+- Dashboard'da canlı gelir verileri
+- SuperAdminController endpoint'leri entegre edildi
+- Asenkron veri çekme ve JSON parse işlemleri
+
+### v1.2.0 (Temmuz 2025)
+🎨 **UI/UX İyileştirmeleri**
+- Header optimizasyonu ve gereksiz UI elemanları kaldırıldı
+- Geri dön butonu ikon olarak (←) değiştirildi
+- Dashboard'da bildirim (çan) butonu eklendi
+- Layout spacer ile düzenli hizalandı
+- Modern hover efektleri ve animasyonlar
+
+### v1.1.0 (Haziran 2025)
+📰 **Haber Yönetimi Genişletildi**
+- Multipart form data ile görsel upload
+- Platform bazlı filtreleme
+- Tarih aralığı belirleme
+- Soft delete işlemleri
+
+### v1.0.0 (Mayıs 2025)
+🚀 **İlk Resmi Sürüm**
+- Açılır/kapanır alt menü sistemi
+- Soft renkli tasarım ve tam ekran modu
+- Token tabanlı güvenlik ve otomatik giriş
+- Admin onayları sayfası
+- Temel CRUD işlemleri
+
+## 🤝 Katkı Sağlama
+
+Bu proje özel bir kurum için geliştirilmiştir. Katkı sağlamak için:
+
+1. 🍴 Fork edin
+2. 🌟 Feature branch oluşturun (`git checkout -b feature/yeni-ozellik`)
+3. ✅ Değişikliklerinizi commit edin (`git commit -m 'feat: yeni özellik eklendi'`)
+4. 📤 Branch'i push edin (`git push origin feature/yeni-ozellik`)
+5. 🔄 Pull Request oluşturun
+
+### Commit Mesaj Formatı
+```
+<type>(<scope>): <description>
+
+feat(ui): header optimizasyonu ve navigasyon iyileştirmeleri
+fix(api): token yenileme sorunu düzeltildi
+docs(readme): kurulum kılavuzu güncellendi
+```
+
+## 📄 Lisans
+
+Bu proje özel/kurumsal kullanım içindir. Daha fazla bilgi için proje sahibi ile iletişime geçin.
 
 ---
 
-**Not:**
-- Doğrulama kodu hatası veya backend bağlantı sorunlarında, backend'in döndürdüğü hata mesajı ekranda gösterilir.
-- Uygulama varsayılan olarak tam ekran modunda başlar, ESC tuşu ile pencere moduna geçilebilir.
-- Tüm sayfalar için soft renkli bir tema kullanılmıştır.
-- Alt menüleri açmak için ana menü öğelerine tıklayın.
+## 💡 Önemli Notlar
+
+⚠️ **Güvenlik**: 
+- Token'ları güvenli bir şekilde saklayın
+- Superadmin şifrelerini düzenli olarak değiştirin
+- API endpoint'lerini secure bağlantılar üzerinden kullanın
+
+🔧 **Performans**:
+- Uygulama varsayılan olarak tam ekran modunda başlar
+- ESC tuşu ile pencere moduna geçilebilir
+- Tüm sayfalar lazy loading ile optimize edilmiştir
+
+🎨 **UI/UX**:
+- Tüm sayfalar için soft renkli tema kullanılır
+- Sol menüde accordion mantığı: bir alt menü açıldığında diğerleri otomatik kapanır
+- Hover efektleri ve animasyonlar UX'i geliştirir
+- Header'lar temiz ve minimal tasarımla optimize edilmiştir
+
+📱 **Responsive**:
+- Tüm ekran boyutlarına uyumlu
+- Minimum 1200x800 çözünürlük önerilir
+- Tam ekran modunda optimum deneyim
+
+---
+
+**🌟 Son güncelleme: Temmuz 2025 - v1.3.1**
