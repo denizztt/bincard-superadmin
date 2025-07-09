@@ -739,7 +739,7 @@ public class SuperadminDashboardFX {
                     new AuditLogsPage(stage, accessToken, refreshToken);
                     break;
                 case "Statistics":
-                    showUnderConstructionAlert("İstatistikler");
+                    new IncomeReportsPage(stage, accessToken, refreshToken);
                     break;
                     
                 // Otobüs alt sayfaları
@@ -850,7 +850,7 @@ public class SuperadminDashboardFX {
                 case "Kullanıcılar":
                 case "Cüzdan":
                 case "İstatistikler":
-                    showUnderConstructionAlert(section);
+                    new IncomeReportsPage(stage, accessToken, refreshToken);
                     break;
                 default:
                     // Varsayılan durum

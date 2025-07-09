@@ -20,7 +20,6 @@ import javafx.stage.Stage;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class AdminApprovalsPage extends SuperadminPageBase {
@@ -30,15 +29,17 @@ public class AdminApprovalsPage extends SuperadminPageBase {
 
     // Admin onay talebi sınıfı
     public static class AdminRequest {
-        private String id;
+        private String id;         // AdminApprovalRequest ID (onay/red endpoint'i için kullanılır)
+        private String adminId;    // Admin kullanıcısının ID'si (adminin kendi ID'si)
         private String name;
         private String email;
         private String phone;
         private String requestDate;
         private String status;
 
-        public AdminRequest(String id, String name, String email, String phone, String requestDate, String status) {
+        public AdminRequest(String id, String adminId, String name, String email, String phone, String requestDate, String status) {
             this.id = id;
+            this.adminId = adminId;
             this.name = name;
             this.email = email;
             this.phone = phone;
@@ -47,6 +48,7 @@ public class AdminApprovalsPage extends SuperadminPageBase {
         }
 
         public String getId() { return id; }
+        public String getAdminId() { return adminId; }
         public String getName() { return name; }
         public String getEmail() { return email; }
         public String getPhone() { return phone; }
@@ -235,27 +237,71 @@ public class AdminApprovalsPage extends SuperadminPageBase {
         
         try {
             // JSON response'u parse et
-            // Backend'den gelen format: {"success": true, "data": [...], "message": "..."}
+            // DataResponseMessage<List<AdminApprovalRequest>> formatı bekleniyor
             
-            if (jsonResponse.contains("\"data\":[")) {
-                String dataSection = jsonResponse.split("\"data\":")[1];
-                if (dataSection.startsWith("[")) {
-                    dataSection = dataSection.substring(1); // [ kaldır
-                    int endIndex = dataSection.lastIndexOf("]");
-                    if (endIndex > 0) {
-                        dataSection = dataSection.substring(0, endIndex);
+            System.out.println("Parsing response: " + jsonResponse);
+            
+            // Önce "data" array'ini bul
+            int dataStartIdx = jsonResponse.indexOf("\"data\":[");
+            if (dataStartIdx >= 0) {
+                dataStartIdx += 7; // "data":[ uzunluğu
+                
+                // Tüm data array'ini al
+                int bracketCount = 1;
+                int dataEndIdx = dataStartIdx;
+                
+                for (int i = dataStartIdx + 1; i < jsonResponse.length(); i++) {
+                    char c = jsonResponse.charAt(i);
+                    if (c == '[') bracketCount++;
+                    else if (c == ']') {
+                        bracketCount--;
+                        if (bracketCount == 0) {
+                            dataEndIdx = i;
+                            break;
+                        }
                     }
+                }
+                
+                // Geçerli bir data array'i bulundu mu?
+                if (dataEndIdx > dataStartIdx) {
+                    String dataArray = jsonResponse.substring(dataStartIdx, dataEndIdx + 1);
                     
-                    // Her bir admin request objesini parse et
-                    String[] requestObjects = dataSection.split("\\},\\s*\\{");
-                    
-                    for (String requestStr : requestObjects) {
-                        // { ve } karakterlerini temizle
-                        requestStr = requestStr.replace("{", "").replace("}", "");
+                    // Her bir JSON nesnesini bul
+                    int objStartIdx = 0;
+                    while (objStartIdx < dataArray.length()) {
+                        // Bir JSON nesnesi bul
+                        int curlyStart = dataArray.indexOf('{', objStartIdx);
+                        if (curlyStart == -1) break;
                         
-                        AdminRequest request = parseAdminRequestObject(requestStr);
-                        if (request != null) {
-                            requests.add(request);
+                        // Nesnenin kapanış parantezini bul
+                        int curlyCount = 1;
+                        int curlyEnd = -1;
+                        
+                        for (int i = curlyStart + 1; i < dataArray.length(); i++) {
+                            char c = dataArray.charAt(i);
+                            if (c == '{') curlyCount++;
+                            else if (c == '}') {
+                                curlyCount--;
+                                if (curlyCount == 0) {
+                                    curlyEnd = i;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (curlyEnd > curlyStart) {
+                            // Tam bir JSON nesnesi bulundu
+                            String requestJson = dataArray.substring(curlyStart, curlyEnd + 1);
+                            AdminRequest request = parseAdminRequestObject(requestJson);
+                            if (request != null) {
+                                requests.add(request);
+                            }
+                            
+                            // Sonraki nesneden devam et
+                            objStartIdx = curlyEnd + 1;
+                        } else {
+                            // Nesne kapanmamış, çık
+                            break;
                         }
                     }
                 }
@@ -270,36 +316,129 @@ public class AdminApprovalsPage extends SuperadminPageBase {
     
     /**
      * Tek bir admin request objesini parse eder
+     * 
+     * AdminApprovalRequest yapısı:
+     * {
+     *   "id": number,
+     *   "admin": { "id": number, "name": string, "email": string, ... },
+     *   "approvedBy": object | null,
+     *   "approvedAt": string | null,
+     *   "requestedAt": string,
+     *   "updateAt": string | null,
+     *   "createdAt": string,
+     *   "status": string,
+     *   "note": string | null
+     * }
      */
     private AdminRequest parseAdminRequestObject(String requestStr) {
         try {
+            System.out.println("Parsing request object: " + requestStr);
+            
+            // Ana request bilgileri - adminApprovalRequest ID'si (onay/red için bu ID kullanılmalı)
             String id = extractJsonValue(requestStr, "id");
-            String name = extractJsonValue(requestStr, "name");
-            String surname = extractJsonValue(requestStr, "surname");
-            String email = extractJsonValue(requestStr, "email");
-            String telephone = extractJsonValue(requestStr, "telephone");
-            String createdAt = extractJsonValue(requestStr, "createdAt");
+            String requestedAt = extractJsonValue(requestStr, "requestedAt");
             String status = extractJsonValue(requestStr, "status");
+            
+            // Admin bilgilerini al
+            String adminSection = null;
+            int adminStartIdx = requestStr.indexOf("\"admin\":{");
+            if (adminStartIdx >= 0) {
+                int adminEndIdx = findMatchingBrace(requestStr, adminStartIdx + 8);
+                if (adminEndIdx > 0) {
+                    adminSection = requestStr.substring(adminStartIdx + 8, adminEndIdx + 1);
+                }
+            }
+            
+            // Admin bilgileri
+            String name = null;
+            String surname = null;
+            String email = null;
+            String telephone = null;
+            String adminId = null;
+            
+            if (adminSection != null) {
+                // Admin ID'sini al
+                adminId = extractJsonValue(adminSection, "id");
+                System.out.println("Parsed Admin ID: " + adminId);
+                
+                // UserNumber (telefon numarası) doğrudan admin nesnesi içinde
+                telephone = extractJsonValue(adminSection, "userNumber");
+                
+                // profileInfo nesnesini bul
+                int profileInfoStartIdx = adminSection.indexOf("\"profileInfo\":{");
+                if (profileInfoStartIdx >= 0) {
+                    int profileInfoEndIdx = findMatchingBrace(adminSection, profileInfoStartIdx + 14);
+                    if (profileInfoEndIdx > 0) {
+                        String profileInfoSection = adminSection.substring(profileInfoStartIdx + 14, profileInfoEndIdx + 1);
+                        name = extractJsonValue(profileInfoSection, "name");
+                        surname = extractJsonValue(profileInfoSection, "surname");
+                        email = extractJsonValue(profileInfoSection, "email");
+                    }
+                }
+            }
+            
+            // API'den gelen status değerini kontrol et ve uygun formata dönüştür
+            String displayStatus = "Beklemede";
+            if (status != null) {
+                if (status.equalsIgnoreCase("APPROVED")) {
+                    displayStatus = "Onaylandı";
+                } else if (status.equalsIgnoreCase("REJECTED")) {
+                    displayStatus = "Reddedildi";
+                } else if (status.equalsIgnoreCase("PENDING")) {
+                    displayStatus = "Beklemede";
+                }
+            }
             
             // Tam adı oluştur
             String fullName = (name != null ? name : "") + " " + (surname != null ? surname : "");
             fullName = fullName.trim();
+            if (fullName.isEmpty()) {
+                fullName = "İsimsiz Admin #" + id;
+            }
             
             // Tarihi formatla
-            String formattedDate = formatDate(createdAt);
+            String formattedDate = formatDate(requestedAt != null ? requestedAt : extractJsonValue(requestStr, "createdAt"));
             
             return new AdminRequest(
-                id != null ? id : "0", 
+                id != null ? id : "0",
+                adminId != null ? adminId : "0",
                 fullName, 
                 email != null ? email : "", 
                 telephone != null ? telephone : "", 
                 formattedDate, 
-                status != null ? status : "Beklemede"
+                displayStatus
             );
         } catch (Exception e) {
             System.err.println("Admin request parse hatası: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
+    }
+    
+    /**
+     * JSON içinde başlangıç indexinden itibaren eşleşen parantezi bulur
+     * @param json JSON string
+     * @param startIdx { karakterinin index'i
+     * @return } karakterinin index'i, bulamazsa -1
+     */
+    private int findMatchingBrace(String json, int startIdx) {
+        if (startIdx >= json.length() || json.charAt(startIdx) != '{') {
+            return -1;
+        }
+        
+        int count = 1;
+        for (int i = startIdx + 1; i < json.length(); i++) {
+            if (json.charAt(i) == '{') {
+                count++;
+            } else if (json.charAt(i) == '}') {
+                count--;
+                if (count == 0) {
+                    return i;
+                }
+            }
+        }
+        
+        return -1;
     }
     
     /**
@@ -358,21 +497,45 @@ public class AdminApprovalsPage extends SuperadminPageBase {
                 
                 CompletableFuture.runAsync(() -> {
                     try {
-                        // Gerçek API çağrısı
-                        long adminId = Long.parseLong(request.getId());
+                        // Admin ID değerini al - Önemli: Onay isteği ID'si değil, admin kullanıcı ID'si kullanılmalı
+                        long adminId = Long.parseLong(request.getAdminId());
+                        System.out.println("Onaylama işlemi başlatılıyor - Admin ID: " + adminId + ", Request ID: " + request.getId());
+                        System.out.println("Admin Bilgileri: " + request.getName() + ", " + request.getEmail() + ", " + request.getPhone());
+                        
+                        System.out.println("API çağrısı yapılıyor: adminId=" + adminId);
+                        // API çağrısı
                         String apiResponse = ApiClientFX.approveAdminRequest(accessToken, adminId);
                         System.out.println("Admin onay API yanıtı: " + apiResponse);
                         
-                        // UI thread'inde güncelleme yap
-                        Platform.runLater(() -> {
-                            request.setStatus("Onaylandı");
-                            tableView.refresh();
-                            showSuccessAlert("İşlem Başarılı", "Admin hesabı başarıyla onaylandı.");
-                            statusLabel.setText("Admin onaylandı: " + request.getName() + " - " + 
-                                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss")));
-                        });
+                        // Yanıt başarılı mı kontrol et
+                        boolean isSuccess = apiResponse.contains("\"success\":true") || 
+                                           apiResponse.contains("başarılı") || 
+                                           !apiResponse.contains("error");
+                        
+                        if (isSuccess) {
+                            System.out.println("Onay işlemi başarılı: " + adminId);
+                            
+                            // UI thread'inde güncelleme yap
+                            Platform.runLater(() -> {
+                                request.setStatus("Onaylandı");
+                                tableView.refresh();
+                                showSuccessAlert("İşlem Başarılı", "Admin hesabı başarıyla onaylandı.");
+                                statusLabel.setText("Admin onaylandı: " + request.getName() + " - " + 
+                                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss")));
+                                
+                                // Tüm listeyi yeniden yükle (güncel durumu görmek için)
+                                loadAdminRequests();
+                            });
+                        } else {
+                            System.err.println("API yanıtında başarı bilgisi bulunamadı: " + apiResponse);
+                            Platform.runLater(() -> {
+                                statusLabel.setText("Onay işlemi tamamlandı ancak sonuç belirsiz. Listeyi yeniliyorum...");
+                                loadAdminRequests(); // Yine de listeyi yenile
+                            });
+                        }
                     } catch (Exception e) {
                         System.err.println("Admin onay hatası: " + e.getMessage());
+                        e.printStackTrace(); // Stack trace ekleyerek daha detaylı hata bilgisi
                         Platform.runLater(() -> {
                             statusLabel.setText("Onay işlemi başarısız: " + e.getMessage());
                             showErrorAlert("Onay İşlemi Başarısız", "Admin onaylanırken bir hata oluştu: " + e.getMessage());
@@ -395,21 +558,45 @@ public class AdminApprovalsPage extends SuperadminPageBase {
                 
                 CompletableFuture.runAsync(() -> {
                     try {
-                        // Gerçek API çağrısı
-                        long adminId = Long.parseLong(request.getId());
+                        // Admin ID değerini al - Önemli: Onay isteği ID'si değil, admin kullanıcı ID'si kullanılmalı
+                        long adminId = Long.parseLong(request.getAdminId());
+                        System.out.println("Reddetme işlemi başlatılıyor - Admin ID: " + adminId + ", Request ID: " + request.getId());
+                        System.out.println("Admin Bilgileri: " + request.getName() + ", " + request.getEmail() + ", " + request.getPhone());
+                        
+                        System.out.println("API çağrısı yapılıyor: adminId=" + adminId);
+                        // API çağrısı
                         String apiResponse = ApiClientFX.rejectAdminRequest(accessToken, adminId);
                         System.out.println("Admin red API yanıtı: " + apiResponse);
                         
-                        // UI thread'inde güncelleme yap
-                        Platform.runLater(() -> {
-                            request.setStatus("Reddedildi");
-                            tableView.refresh();
-                            showSuccessAlert("İşlem Başarılı", "Admin hesabı başarıyla reddedildi.");
-                            statusLabel.setText("Admin reddedildi: " + request.getName() + " - " + 
-                                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss")));
-                        });
+                        // Yanıt başarılı mı kontrol et
+                        boolean isSuccess = apiResponse.contains("\"success\":true") || 
+                                           apiResponse.contains("başarılı") || 
+                                           !apiResponse.contains("error");
+                        
+                        if (isSuccess) {
+                            System.out.println("Reddetme işlemi başarılı: " + adminId);
+                            
+                            // UI thread'inde güncelleme yap
+                            Platform.runLater(() -> {
+                                request.setStatus("Reddedildi");
+                                tableView.refresh();
+                                showSuccessAlert("İşlem Başarılı", "Admin hesabı başarıyla reddedildi.");
+                                statusLabel.setText("Admin reddedildi: " + request.getName() + " - " + 
+                                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss")));
+                                
+                                // Tüm listeyi yeniden yükle (güncel durumu görmek için)
+                                loadAdminRequests();
+                            });
+                        } else {
+                            System.err.println("API yanıtında başarı bilgisi bulunamadı: " + apiResponse);
+                            Platform.runLater(() -> {
+                                statusLabel.setText("Red işlemi tamamlandı ancak sonuç belirsiz. Listeyi yeniliyorum...");
+                                loadAdminRequests(); // Yine de listeyi yenile
+                            });
+                        }
                     } catch (Exception e) {
                         System.err.println("Admin red hatası: " + e.getMessage());
+                        e.printStackTrace(); // Stack trace ekleyerek daha detaylı hata bilgisi
                         Platform.runLater(() -> {
                             statusLabel.setText("Red işlemi başarısız: " + e.getMessage());
                             showErrorAlert("Red İşlemi Başarısız", "Admin reddedilirken bir hata oluştu: " + e.getMessage());

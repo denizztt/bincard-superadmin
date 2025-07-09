@@ -2,9 +2,12 @@ package com.bincard.bincard_superadmin;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -778,12 +781,22 @@ public class ApiClientFX {
     /**
      * Bekleyen admin onay taleplerini getirir
      * GET /v1/api/superadmin/admin-requests/pending
+     * 
+     * API Response Format:
+     * DataResponseMessage<List<AdminApprovalRequest>>
      */
     public static String getPendingAdminRequests(TokenDTO accessToken, int page, int size) throws IOException {
-        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/admin-requests/pending";
+        String endpoint = BASE_URL + "/superadmin/admin-requests/pending";
         endpoint += "?page=" + page + "&size=" + size + "&sort=createdAt&direction=DESC";
         
-        URL url = new URL(endpoint);
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -801,6 +814,8 @@ public class ApiClientFX {
                 response.append(responseLine.trim());
             }
             
+            System.out.println("Admin istekleri yanıtı: " + response.toString());
+            
             if (code == 200) {
                 return response.toString();
             } else {
@@ -812,19 +827,47 @@ public class ApiClientFX {
     
     /**
      * Admin isteğini onaylar
-     * POST /v1/api/superadmin/admin-requests/{adminId}/approve
+     * POST /v1/api/admin-requests/{adminId}/approve
      */
     public static String approveAdminRequest(TokenDTO accessToken, Long adminId) throws IOException {
-        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/admin-requests/" + adminId + "/approve";
+        // Düzeltilmiş endpoint adresi
+        String endpoint = BASE_URL + "/superadmin/admin-requests/" + adminId + "/approve";
         
-        URL url = new URL(endpoint);
+        System.out.println("Onaylama isteği gönderiliyor: " + endpoint);
+        
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
         conn.setDoOutput(true);
         
+        // Boş bir JSON body gönder (Backend boş body bekliyorsa)
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = "{}".getBytes("utf-8");
+            os.write(input, 0, input.length);
+            os.flush();
+            System.out.println("Onay isteğine boş body gönderildi");
+        }
+        
+        System.out.println("HTTP isteği gönderildi, yanıt bekleniyor...");
         int code = conn.getResponseCode();
+        System.out.println("Onaylama isteği yanıt kodu: " + code);
+        
+        System.out.println("HTTP yanıt başlıkları:");
+        conn.getHeaderFields().forEach((key, values) -> {
+            if (key != null) {
+                System.out.println(key + ": " + String.join(", ", values));
+            }
+        });
+        
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(
                         code == 200 ? conn.getInputStream() : conn.getErrorStream(),
@@ -836,10 +879,14 @@ public class ApiClientFX {
                 response.append(responseLine.trim());
             }
             
+            System.out.println("Onaylama işlemi tam yanıtı: " + response.toString());
+            
             if (code == 200) {
+                System.out.println("Onaylama işlemi başarılı, adminId=" + adminId);
                 return response.toString();
             } else {
                 String errorMsg = extractJsonMessage(response.toString());
+                System.err.println("Onaylama işlemi başarısız: " + errorMsg + ", HTTP Kodu: " + code);
                 throw new IOException(errorMsg != null ? errorMsg : "Admin isteği onaylanamadı: " + code);
             }
         }
@@ -847,19 +894,47 @@ public class ApiClientFX {
     
     /**
      * Admin isteğini reddeder
-     * POST /v1/api/superadmin/admin-requests/{adminId}/reject
+     * POST /v1/api/admin-requests/{adminId}/reject
      */
     public static String rejectAdminRequest(TokenDTO accessToken, Long adminId) throws IOException {
-        String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/admin-requests/" + adminId + "/reject";
+        // Düzeltilmiş endpoint adresi
+        String endpoint = BASE_URL + "/superadmin/admin-requests/" + adminId + "/reject";
         
-        URL url = new URL(endpoint);
+        System.out.println("Reddetme isteği gönderiliyor: " + endpoint);
+        
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
         conn.setDoOutput(true);
         
+        // Boş bir JSON body gönder (Backend boş body bekliyorsa)
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = "{}".getBytes("utf-8");
+            os.write(input, 0, input.length);
+            os.flush();
+            System.out.println("Red isteğine boş body gönderildi");
+        }
+        
+        System.out.println("HTTP isteği gönderildi, yanıt bekleniyor...");
         int code = conn.getResponseCode();
+        System.out.println("Reddetme isteği yanıt kodu: " + code);
+        
+        System.out.println("HTTP yanıt başlıkları:");
+        conn.getHeaderFields().forEach((key, values) -> {
+            if (key != null) {
+                System.out.println(key + ": " + String.join(", ", values));
+            }
+        });
+        
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(
                         code == 200 ? conn.getInputStream() : conn.getErrorStream(),
@@ -871,10 +946,14 @@ public class ApiClientFX {
                 response.append(responseLine.trim());
             }
             
+            System.out.println("Reddetme işlemi tam yanıtı: " + response.toString());
+            
             if (code == 200) {
+                System.out.println("Reddetme işlemi başarılı, adminId=" + adminId);
                 return response.toString();
             } else {
                 String errorMsg = extractJsonMessage(response.toString());
+                System.err.println("Reddetme işlemi başarısız: " + errorMsg + ", HTTP Kodu: " + code);
                 throw new IOException(errorMsg != null ? errorMsg : "Admin isteği reddedilemedi: " + code);
             }
         }
@@ -887,7 +966,14 @@ public class ApiClientFX {
     public static String getIncomeSummary(TokenDTO accessToken) throws IOException {
         String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/income-summary";
         
-        URL url = new URL(endpoint);
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -921,7 +1007,14 @@ public class ApiClientFX {
     public static String getDailyBusIncome(TokenDTO accessToken, String date) throws IOException {
         String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/bus-income/daily?date=" + date;
         
-        URL url = new URL(endpoint);
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -955,7 +1048,14 @@ public class ApiClientFX {
     public static String getWeeklyBusIncome(TokenDTO accessToken, String startDate, String endDate) throws IOException {
         String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/bus-income/weekly?startDate=" + startDate + "&endDate=" + endDate;
         
-        URL url = new URL(endpoint);
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -989,7 +1089,14 @@ public class ApiClientFX {
     public static String getMonthlyBusIncome(TokenDTO accessToken, int year, int month) throws IOException {
         String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/bus-income/monthly?year=" + year + "&month=" + month;
         
-        URL url = new URL(endpoint);
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Content-Type", "application/json");
@@ -1038,29 +1145,87 @@ public class ApiClientFX {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
         }
         
-        URL url = new URL(endpoint);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        System.out.println("Audit logs endpoint: " + endpoint);
         
-        int code = conn.getResponseCode();
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(
-                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
-                        "utf-8"))) {
-
-            StringBuilder response = new StringBuilder();
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            System.err.println("Geçersiz URL formatı: " + endpoint);
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
+        HttpURLConnection conn = null;
+        InputStream inputStream = null;
+        BufferedReader br = null;
+        StringBuilder response = new StringBuilder();
+        
+        try {
+            // Bağlantıyı oluştur
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+            conn.setConnectTimeout(10000); // 10 saniye bağlantı zaman aşımı
+            conn.setReadTimeout(10000);    // 10 saniye okuma zaman aşımı
+            
+            System.out.println("API isteği gönderiliyor: " + endpoint);
+            
+            // Yanıt kodunu al
+            int code = conn.getResponseCode();
+            System.out.println("API yanıt kodu: " + code);
+            
+            // Yanıt veya hata stream'ini al
+            if (code == 200) {
+                inputStream = conn.getInputStream();
+            } else {
+                inputStream = conn.getErrorStream();
+            }
+            
+            // Stream null kontrolü
+            if (inputStream == null) {
+                System.err.println("API yanıt içeriği alınamadı (null stream)");
+                return "{\"success\":false,\"message\":\"API yanıt içeriği alınamadı\",\"data\":[]}";
+            }
+            
+            // Yanıtı oku
+            br = new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
                 response.append(responseLine.trim());
             }
             
+            String responseStr = response.toString();
+            System.out.println("API yanıtı: " + (responseStr.length() > 100 ? responseStr.substring(0, 100) + "..." : responseStr));
+            
             if (code == 200) {
-                return response.toString();
+                return responseStr;
             } else {
-                String errorMsg = extractJsonMessage(response.toString());
-                throw new IOException(errorMsg != null ? errorMsg : "Audit log verileri alınamadı: " + code);
+                String errorMsg = extractJsonMessage(responseStr);
+                return "{\"success\":false,\"message\":\"" + (errorMsg != null ? errorMsg : "Audit log verileri alınamadı: " + code) + "\",\"data\":[]}";
+            }
+            
+        } catch (Exception e) {
+            System.err.println("API isteği sırasında hata: " + e.getMessage());
+            e.printStackTrace();
+            return "{\"success\":false,\"message\":\"API isteği başarısız: " + e.getMessage() + "\",\"data\":[]}";
+        } finally {
+            // Kaynakları temizle
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    System.err.println("BufferedReader kapatılırken hata: " + e.getMessage());
+                }
+            }
+            
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    System.err.println("InputStream kapatılırken hata: " + e.getMessage());
+                }
             }
         }
     }
