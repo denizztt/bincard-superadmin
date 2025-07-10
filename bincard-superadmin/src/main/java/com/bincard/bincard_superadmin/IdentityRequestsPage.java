@@ -945,7 +945,7 @@ public class IdentityRequestsPage extends SuperadminPageBase {
             imageButtons.setAlignment(Pos.CENTER);
             
             if (info.getFrontCardPhoto() != null) {
-                Button frontButton = new Button("Ön Yüz Görüntüle");
+                Button frontButton = new Button("Ön Yüz Fotoğrafı");
                 frontButton.setStyle("-fx-background-color: #007bff; -fx-text-fill: white;");
                 frontButton.setOnAction(e -> {
                     // Gerçek uygulamada resim görüntüleme
@@ -955,7 +955,7 @@ public class IdentityRequestsPage extends SuperadminPageBase {
             }
             
             if (info.getBackCardPhoto() != null) {
-                Button backButton = new Button("Arka Yüz Görüntüle");
+                Button backButton = new Button("Arka Yüz Fotoğrafı");
                 backButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white;");
                 backButton.setOnAction(e -> {
                     // Gerçek uygulamada resim görüntüleme
@@ -1090,34 +1090,86 @@ public class IdentityRequestsPage extends SuperadminPageBase {
     private void showImageUrl(String title, String imageUrl) {
         Dialog<Void> imageDialog = new Dialog<>();
         imageDialog.setTitle(title);
-        imageDialog.setHeaderText("Resim URL'si:");
+        imageDialog.setHeaderText(null);
         
         VBox content = new VBox(15);
         content.setPadding(new Insets(20));
+        content.setAlignment(Pos.CENTER);
         
-        TextField urlField = new TextField(imageUrl);
-        urlField.setEditable(false);
-        urlField.setPrefWidth(400);
-        
-        Button openButton = new Button("Tarayıcıda Aç");
-        openButton.setStyle("-fx-background-color: #007bff; -fx-text-fill: white;");
-        openButton.setOnAction(e -> {
-            try {
-                // URL'yi kopyala
-                showInfo("URL Kopyalandı", "Resim URL'si panoya kopyalandı: " + imageUrl);
-            } catch (Exception ex) {
-                showError("URL açılamadı: " + ex.getMessage());
+        try {
+            // Resmi yükle ve göster
+            javafx.scene.image.Image image = new javafx.scene.image.Image(imageUrl, true);
+            javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(image);
+            
+            // Resim boyutlarını ayarla
+            imageView.setFitWidth(400);
+            imageView.setFitHeight(300);
+            imageView.setPreserveRatio(true);
+            imageView.setSmooth(true);
+            
+            // Resim yükleme durumunu kontrol et
+            if (image.isError()) {
+                Label errorLabel = new Label("Resim yüklenemedi: " + imageUrl);
+                errorLabel.setStyle("-fx-text-fill: red;");
+                content.getChildren().add(errorLabel);
+            } else {
+                content.getChildren().add(imageView);
+                
+                // Resim bilgileri
+                Label infoLabel = new Label("Resim URL: " + imageUrl);
+                infoLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
+                content.getChildren().add(infoLabel);
+                
+                // Tam boyutta göster butonu
+                Button fullSizeButton = new Button("Tam Boyut");
+                fullSizeButton.setStyle("-fx-background-color: #28a745; -fx-text-fill: white;");
+                fullSizeButton.setOnAction(e -> showFullSizeImage(title, imageUrl));
+                content.getChildren().add(fullSizeButton);
             }
-        });
+            
+        } catch (Exception e) {
+            Label errorLabel = new Label("Resim yüklenirken hata: " + e.getMessage());
+            errorLabel.setStyle("-fx-text-fill: red;");
+            content.getChildren().add(errorLabel);
+        }
         
-        content.getChildren().addAll(
-            new Label("Resim URL'si:"),
-            urlField,
-            openButton
-        );
-        
+        // Dialog boyutlarını ayarla
         imageDialog.getDialogPane().setContent(content);
         imageDialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        imageDialog.getDialogPane().setPrefSize(450, 400);
+        imageDialog.setResizable(true);
         imageDialog.showAndWait();
+    }
+    
+    private void showFullSizeImage(String title, String imageUrl) {
+        Dialog<Void> fullSizeDialog = new Dialog<>();
+        fullSizeDialog.setTitle(title + " - Tam Boyut");
+        fullSizeDialog.setHeaderText(null);
+        
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        
+        try {
+            javafx.scene.image.Image image = new javafx.scene.image.Image(imageUrl, true);
+            javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView(image);
+            
+            // Orijinal boyutta göster
+            imageView.setPreserveRatio(true);
+            imageView.setSmooth(true);
+            
+            scrollPane.setContent(imageView);
+            
+        } catch (Exception e) {
+            Label errorLabel = new Label("Resim yüklenirken hata: " + e.getMessage());
+            errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 14px;");
+            scrollPane.setContent(errorLabel);
+        }
+        
+        fullSizeDialog.getDialogPane().setContent(scrollPane);
+        fullSizeDialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        fullSizeDialog.getDialogPane().setPrefSize(800, 600);
+        fullSizeDialog.setResizable(true);
+        fullSizeDialog.showAndWait();
     }
 }
