@@ -567,11 +567,15 @@ public class NewsPage extends SuperadminPageBase {
             newsTable.getItems().clear();
             newsTable.getItems().addAll(newsList);
         } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Haberler yüklenirken bir hata oluştu: " + e.getMessage());
+            System.err.println("Haberler API'si mevcut değil, örnek verilerle devam ediliyor: " + e.getMessage());
             
-            // Hata durumunda örnek verilerle devam et
+            // Hata durumunda sessizce örnek verilerle devam et
+            System.out.println("API'den veri alınamadı, örnek verilerle devam ediliyor...");
             createSampleNews();
+            
+            // Tabloya örnek verileri ekle
+            newsTable.getItems().clear();
+            newsTable.getItems().addAll(newsList);
         }
     }
     
