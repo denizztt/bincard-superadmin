@@ -124,7 +124,19 @@ public class SuperadminLoginFX {
             }
         });
 
-        verificationContainer.getChildren().addAll(verificationTitle, verificationDesc, verificationCodeField);
+        // Yeniden Doğrulama Kodu Gönder butonu
+        Button resendVerificationButton = new Button("Yeniden Doğrulama Kodu Gönder");
+        resendVerificationButton.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
+        resendVerificationButton.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
+        resendVerificationButton.setPrefHeight(40);
+        resendVerificationButton.setMaxWidth(Double.MAX_VALUE);
+        resendVerificationButton.setOnMouseEntered(e -> resendVerificationButton.setStyle("-fx-background-color: #d68910; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        resendVerificationButton.setOnMouseExited(e -> resendVerificationButton.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        
+        // Event handler
+        resendVerificationButton.setOnAction(e -> handleResendVerificationCode());
+
+        verificationContainer.getChildren().addAll(verificationTitle, verificationDesc, verificationCodeField, resendVerificationButton);
 
         // Giriş butonu
         loginButton = new Button("Giriş Yap");
@@ -405,5 +417,88 @@ public class SuperadminLoginFX {
             tokenRefreshTimer.cancel();
         }
         new MainMenuFX(stage);
+    }
+
+    /**
+     * Yeniden doğrulama kodu gönderme işlemini gerçekleştirir
+     */
+    private void handleResendVerificationCode() {
+        if (currentPhone == null || currentPhone.isEmpty()) {
+            showResult("Telefon numarası bulunamadı. Lütfen giriş ekranına dönün.", false);
+            return;
+        }
+        
+        // UI öğelerini devre dışı bırak ve mesajı güncelle
+        // verificationContainer içindeki yeniden doğrulama butonuna doğrudan referans oluşturalım
+        Button resendButton = findResendButton();
+        
+        final String originalButtonText = resendButton != null ? resendButton.getText() : "";
+        if (resendButton != null) {
+            resendButton.setDisable(true);
+            resendButton.setText("Kod gönderiliyor...");
+        }
+        
+        // Doğrulama kodu gönderme alanını aktifleştir
+        resultArea.setVisible(true);
+        resultArea.setManaged(true);
+        resultArea.setText("Doğrulama kodu gönderiliyor...");
+        
+        // Arka planda API isteğini gerçekleştir
+        new Thread(() -> {
+            try {
+                String phoneOnlyDigits = currentPhone.replaceAll("[^0-9]", "");
+                
+                // API'ye yeniden doğrulama kodu gönderme isteği yap
+                String response = ApiClientFX.resendVerificationCode(phoneOnlyDigits);
+                
+                // UI thread'inde sonucu göster
+                Platform.runLater(() -> {
+                    // Başarılı sonuç
+                    showResult(response, true);
+                    
+                    // Button'u tekrar aktifleştir
+                    if (resendButton != null) {
+                        resendButton.setDisable(false);
+                        resendButton.setText(originalButtonText);
+                    }
+                });
+            } catch (Exception e) {
+                // Backend'ten gelen hata mesajını direkt göster
+                String errorMessage = e.getMessage();
+                
+                // Hata mesajını konsola yazdır ve debug için stack trace göster
+                System.err.println("Doğrulama kodu gönderme hatası: " + errorMessage);
+                e.printStackTrace(); // Stack trace'i yazdır
+                
+                Platform.runLater(() -> {
+                    // Hata mesajını direkt olarak göster, Backend kelimesini kaldır
+                    String displayMessage = errorMessage;
+                    if (displayMessage != null && displayMessage.startsWith("Backend hatası:")) {
+                        displayMessage = displayMessage.replace("Backend hatası:", "").trim();
+                    }
+                    
+                    showResult(displayMessage, false);
+                    
+                    // Button'u tekrar aktifleştir
+                    if (resendButton != null) {
+                        resendButton.setDisable(false);
+                        resendButton.setText(originalButtonText);
+                    }
+                });
+            }
+        }).start();
+    }
+    
+    /**
+     * Yeniden doğrulama kodu gönder butonunu bulur
+     */
+    private Button findResendButton() {
+        // Tüm butonları tara
+        for (javafx.scene.Node node : ((VBox) verificationCodeField.getParent()).getChildren()) {
+            if (node instanceof Button && ((Button) node).getText().contains("Yeniden Doğrulama")) {
+                return (Button) node;
+            }
+        }
+        return null;
     }
 }

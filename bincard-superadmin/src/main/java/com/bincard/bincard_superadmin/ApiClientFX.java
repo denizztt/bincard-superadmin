@@ -1396,4 +1396,65 @@ public class ApiClientFX {
             throw e;
         }
     }
+
+    /**
+     * Yeniden doğrulama kodu gönderilmesi için API'ye istek yapar
+     */
+    public static String resendVerificationCode(String telephone) throws IOException {
+        // Telefon numarasını URL parametresi olarak ekle
+        String endpoint = BASE_URL + "/auth/resend-verify-code?telephone=" + telephone;
+        
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+        
+        System.out.println("Yeniden doğrulama kodu gönderme URL: " + url.toString());
+        
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST"); // POST yerine GET kullanılacak çünkü URL parametresi ile gönderiyoruz
+        conn.setRequestProperty("Content-Type", "application/json");
+        
+        // GET isteği olduğu için body göndermeye gerek yok
+
+        int code = conn.getResponseCode();
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+
+            String resp = response.toString();
+            System.out.println("Resend Verification Code Response: " + resp);
+
+            // Durum kodu ne olursa olsun, yanıttaki mesajı al
+            try {
+                // message alanını doğrudan extract et
+                String message = extractJsonMessage(resp);
+                
+                if (code == 200 && resp.contains("\"success\":true")) {
+                    // Başarılı olduğunda mesajı doğrudan dön
+                    return message != null ? message : "Doğrulama kodu gönderildi";
+                } else {
+                    // Başarısız olduğunda veya başka bir durum kodunda backend hatası ilet
+                    throw new IOException(message != null ? message : "Backend hatası: " + code + " - " + resp);
+                }
+            } catch (Exception e) {
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                } else {
+                    // Genel hata durumu
+                    throw new IOException("Backend yanıtı işlenirken hata: " + resp);
+                }
+            }
+        }
+    }
 }
