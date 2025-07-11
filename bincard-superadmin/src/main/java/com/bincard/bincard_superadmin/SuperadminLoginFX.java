@@ -28,7 +28,9 @@ public class SuperadminLoginFX {
     private Button loginButton;
     private Button verifyButton;
     private Button backButton;
+    private Button resendVerificationButton;
     private TextArea resultArea;
+    private Label countdownLabel;
     private Stage stage;
     private String currentPhone;
     private String currentPassword;
@@ -36,6 +38,8 @@ public class SuperadminLoginFX {
     private TokenDTO accessToken;
     private TokenDTO refreshToken;
     private Timer tokenRefreshTimer;
+    private Timer countdownTimer;
+    private int remainingSeconds;
 
     public SuperadminLoginFX(Stage stage) {
         this.stage = stage;
@@ -83,9 +87,20 @@ public class SuperadminLoginFX {
         passwordLabel.setTextFill(Color.web("#34495e"));
         
         passwordField = new PasswordField();
-        passwordField.setPromptText("Şifrenizi giriniz");
+        passwordField.setPromptText("6 haneli şifre giriniz");
         passwordField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #3498db; -fx-border-width: 2;");
         passwordField.setPrefHeight(45);
+        
+        // Sadece sayı girişine izin ver ve maksimum 6 hane ile sınırla
+        passwordField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!newValue.matches("\\d*")) {
+                passwordField.setText(newValue.replaceAll("[^\\d]", ""));
+            }
+            // Maksimum 6 haneli şifre için sınırla
+            if (passwordField.getText().length() > 6) {
+                passwordField.setText(passwordField.getText().substring(0, 6));
+            }
+        });
 
         passwordContainer.getChildren().addAll(passwordLabel, passwordField);
 
@@ -124,19 +139,27 @@ public class SuperadminLoginFX {
             }
         });
 
-        // Yeniden Doğrulama Kodu Gönder butonu
-        Button resendVerificationButton = new Button("Yeniden Doğrulama Kodu Gönder");
+        // Yeniden Doğrulama Kodu Gönder butonu (Mavi renkli)
+        resendVerificationButton = new Button("Yeniden Doğrulama Kodu Gönder");
         resendVerificationButton.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
-        resendVerificationButton.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
+        resendVerificationButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
         resendVerificationButton.setPrefHeight(40);
         resendVerificationButton.setMaxWidth(Double.MAX_VALUE);
-        resendVerificationButton.setOnMouseEntered(e -> resendVerificationButton.setStyle("-fx-background-color: #d68910; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
-        resendVerificationButton.setOnMouseExited(e -> resendVerificationButton.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        resendVerificationButton.setOnMouseEntered(e -> resendVerificationButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        resendVerificationButton.setOnMouseExited(e -> resendVerificationButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
         
         // Event handler
         resendVerificationButton.setOnAction(e -> handleResendVerificationCode());
+        
+        // Geri sayım sayacı etiketi
+        countdownLabel = new Label("");
+        countdownLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        countdownLabel.setTextFill(Color.web("#e74c3c"));
+        countdownLabel.setAlignment(Pos.CENTER);
+        countdownLabel.setVisible(false);
+        countdownLabel.setManaged(false);
 
-        verificationContainer.getChildren().addAll(verificationTitle, verificationDesc, verificationCodeField, resendVerificationButton);
+        verificationContainer.getChildren().addAll(verificationTitle, verificationDesc, verificationCodeField, resendVerificationButton, countdownLabel);
 
         // Giriş butonu
         loginButton = new Button("Giriş Yap");
@@ -210,6 +233,12 @@ public class SuperadminLoginFX {
         String phoneOnlyDigits = phone.replaceAll("\\D", "");
         if (!phoneOnlyDigits.matches("^\\d{10,11}$")) {
             showResult("Geçerli bir telefon numarası giriniz!", false);
+            return;
+        }
+        
+        // Şifre kontrolü - sadece 6 haneli sayı
+        if (!password.matches("^\\d{6}$")) {
+            showResult("Şifre 6 haneli sayı olmalıdır!", false);
             return;
         }
 
@@ -428,15 +457,9 @@ public class SuperadminLoginFX {
             return;
         }
         
-        // UI öğelerini devre dışı bırak ve mesajı güncelle
-        // verificationContainer içindeki yeniden doğrulama butonuna doğrudan referans oluşturalım
-        Button resendButton = findResendButton();
-        
-        final String originalButtonText = resendButton != null ? resendButton.getText() : "";
-        if (resendButton != null) {
-            resendButton.setDisable(true);
-            resendButton.setText("Kod gönderiliyor...");
-        }
+        // Butonu devre dışı bırak ve mesajı güncelle
+        resendVerificationButton.setDisable(true);
+        resendVerificationButton.setText("Kod gönderiliyor...");
         
         // Doğrulama kodu gönderme alanını aktifleştir
         resultArea.setVisible(true);
@@ -456,11 +479,8 @@ public class SuperadminLoginFX {
                     // Başarılı sonuç
                     showResult(response, true);
                     
-                    // Button'u tekrar aktifleştir
-                    if (resendButton != null) {
-                        resendButton.setDisable(false);
-                        resendButton.setText(originalButtonText);
-                    }
+                    // Geri sayım sayacını başlat (3 dakika - 180 saniye)
+                    startResendCooldown(180);
                 });
             } catch (Exception e) {
                 // Backend'ten gelen hata mesajını direkt göster
@@ -480,25 +500,80 @@ public class SuperadminLoginFX {
                     showResult(displayMessage, false);
                     
                     // Button'u tekrar aktifleştir
-                    if (resendButton != null) {
-                        resendButton.setDisable(false);
-                        resendButton.setText(originalButtonText);
-                    }
+                    resendVerificationButton.setDisable(false);
+                    resendVerificationButton.setText("Yeniden Doğrulama Kodu Gönder");
                 });
             }
         }).start();
     }
     
     /**
-     * Yeniden doğrulama kodu gönder butonunu bulur
+     * Yeniden doğrulama kodu gönderme için bekleme süresini başlatır
+     * 
+     * @param seconds Bekleme süresi (saniye cinsinden)
      */
-    private Button findResendButton() {
-        // Tüm butonları tara
-        for (javafx.scene.Node node : ((VBox) verificationCodeField.getParent()).getChildren()) {
-            if (node instanceof Button && ((Button) node).getText().contains("Yeniden Doğrulama")) {
-                return (Button) node;
-            }
+    private void startResendCooldown(int seconds) {
+        // Önceki timer varsa iptal et
+        if (countdownTimer != null) {
+            countdownTimer.cancel();
+            countdownTimer = null;
         }
-        return null;
+        
+        // Geri sayım etiketini görünür yap
+        countdownLabel.setVisible(true);
+        countdownLabel.setManaged(true);
+        
+        // Kalan süre değişkenini ayarla
+        remainingSeconds = seconds;
+        
+        // Butonu devre dışı bırak ve metnini güncelle
+        resendVerificationButton.setDisable(true);
+        resendVerificationButton.setText("Yeniden Doğrulama Kodu Gönder");
+        
+        // Başlangıç için etiketi güncelle
+        updateCountdownLabel();
+        
+        // Yeni bir timer oluştur ve her saniye çalıştır
+        countdownTimer = new Timer();
+        countdownTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                remainingSeconds--;
+                
+                Platform.runLater(() -> {
+                    updateCountdownLabel();
+                });
+                
+                // Süre dolduğunda timer'ı iptal et ve butonu etkinleştir
+                if (remainingSeconds <= 0) {
+                    Platform.runLater(() -> {
+                        // Butonu tekrar aktifleştir
+                        resendVerificationButton.setDisable(false);
+                        
+                        // Geri sayım etiketini gizle
+                        countdownLabel.setVisible(false);
+                        countdownLabel.setManaged(false);
+                    });
+                    
+                    // Timer'ı durdur
+                    this.cancel();
+                    countdownTimer = null;
+                }
+            }
+        }, 1000, 1000); // 1 saniye aralıklarla çalıştır
     }
+    
+    /**
+     * Geri sayım etiketini günceller
+     */
+    private void updateCountdownLabel() {
+        int minutes = remainingSeconds / 60;
+        int seconds = remainingSeconds % 60;
+        
+        // Kalan süreyi dakika:saniye formatında göster
+        String timeString = String.format("%02d:%02d içinde yeni kod isteyebilirsiniz", minutes, seconds);
+        countdownLabel.setText(timeString);
+    }
+    
+    // Artık kullanılmayan findResendButton metodu kaldırıldı
 }

@@ -515,49 +515,70 @@ public class NewsPage extends SuperadminPageBase {
             String selectedPlatform = platformFilter.getValue();
             String platform = "Tümü".equals(selectedPlatform) ? null : selectedPlatform;
             
+            // Status bilgisi güncelle
+            System.out.println("Haberler yükleniyor...");
+            
             String response = ApiClientFX.getAllNews(accessToken, platform);
             System.out.println("API Yanıtı: " + response);
             
+            // API yanıtının formatını tespit etmek için detaylı log ekle
+            if (response != null) {
+                System.out.println("API yanıtı uzunluğu: " + response.length());
+                System.out.println("API yanıtı ilk 10 karakter: " + response.substring(0, Math.min(10, response.length())));
+                System.out.println("API yanıtı son 10 karakter: " + response.substring(Math.max(0, response.length() - 10)));
+                System.out.println("data alanı içeriyor mu: " + response.contains("\"data\""));
+                System.out.println("Dizi olarak başlıyor mu: " + response.trim().startsWith("["));
+                System.out.println("Dizi olarak bitiyor mu: " + response.trim().endsWith("]"));
+            }
+            
             // JSON yanıtını işle
             if (response != null && !response.isEmpty()) {
-                // "data" alanını çıkar
+                // API artık doğrudan JSON dizisi döndürebilir veya "data" alanında gönderebilir
+                String dataArray;
+                
+                // Önce "data" alanını kontrol et
                 int dataStart = response.indexOf("\"data\":[");
                 if (dataStart != -1) {
+                    // "data" alanı bulundu, içerisindeki diziyi çıkar
                     dataStart += 8; // "data":[ uzunluğu
                     int dataEnd = response.lastIndexOf("]");
                     if (dataEnd > dataStart) {
-                        String dataArray = response.substring(dataStart, dataEnd);
-                        
-                        // Her bir haber nesnesini işle
-                        int startIndex = 0;
-                        int braceCount = 0;
-                        StringBuilder currentObject = new StringBuilder();
-                        
-                        for (int i = 0; i < dataArray.length(); i++) {
-                            char c = dataArray.charAt(i);
-                            
-                            if (c == '{') {
-                                if (braceCount == 0) {
-                                    startIndex = i;
-                                }
-                                braceCount++;
-                            } else if (c == '}') {
-                                braceCount--;
-                                if (braceCount == 0) {
-                                    // Bir nesne tamamlandı
-                                    String jsonObject = dataArray.substring(startIndex, i + 1);
-                                    News news = News.fromJson(jsonObject);
-                                    if (news != null) {
-                                        newsList.add(news);
-                                    }
-                                }
-                            }
-                        }
+                        dataArray = response.substring(dataStart, dataEnd);
                     } else {
                         System.err.println("JSON veri dizisi bulunamadı veya hatalı format");
+                        return;
                     }
+                } else if (response.trim().startsWith("[") && response.trim().endsWith("]")) {
+                    // Doğrudan dizi döndürülmüş
+                    dataArray = response.substring(1, response.length() - 1);
                 } else {
-                    System.err.println("JSON 'data' alanı bulunamadı");
+                    System.err.println("Tanınmayan JSON formatı, ne 'data' alanı ne de dizi formatında");
+                    return;
+                }
+                
+                // Her bir haber nesnesini işle
+                int startIndex = 0;
+                int braceCount = 0;
+                
+                for (int i = 0; i < dataArray.length(); i++) {
+                    char c = dataArray.charAt(i);
+                    
+                    if (c == '{') {
+                        if (braceCount == 0) {
+                            startIndex = i;
+                        }
+                        braceCount++;
+                    } else if (c == '}') {
+                        braceCount--;
+                        if (braceCount == 0) {
+                            // Bir nesne tamamlandı
+                            String jsonObject = dataArray.substring(startIndex, i + 1);
+                            News news = News.fromJson(jsonObject);
+                            if (news != null) {
+                                newsList.add(news);
+                            }
+                        }
+                    }
                 }
             } else {
                 System.err.println("API yanıtı boş veya null");
@@ -565,12 +586,15 @@ public class NewsPage extends SuperadminPageBase {
             
             // Tabloya ekle
             newsTable.getItems().clear();
-            newsTable.getItems().addAll(newsList);
-        } catch (Exception e) {
-            System.err.println("Haberler API'si mevcut değil, örnek verilerle devam ediliyor: " + e.getMessage());
+            newsTable.getItems().addAll(newsList);            } catch (Exception e) {
+            System.err.println("Haberler API'si mevcut değil veya hata oluştu: " + e.getMessage());
+            e.printStackTrace();
             
             // Hata durumunda sessizce örnek verilerle devam et
             System.out.println("API'den veri alınamadı, örnek verilerle devam ediliyor...");
+            
+            // Eğer boş dizi dönerse veya hata alınırsa haber listesini temizle
+            newsList.clear();
             createSampleNews();
             
             // Tabloya örnek verileri ekle

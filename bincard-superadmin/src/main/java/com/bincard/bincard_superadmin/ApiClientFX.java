@@ -1415,7 +1415,7 @@ public class ApiClientFX {
         System.out.println("Yeniden doğrulama kodu gönderme URL: " + url.toString());
         
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST"); // POST yerine GET kullanılacak çünkü URL parametresi ile gönderiyoruz
+        conn.setRequestMethod("POST"); // POST metodu kullanıyoruz, URL parametresi ile birlikte
         conn.setRequestProperty("Content-Type", "application/json");
         
         // GET isteği olduğu için body göndermeye gerek yok
