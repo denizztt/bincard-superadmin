@@ -112,6 +112,17 @@ public class SuperadminLoginFX {
         verificationCodeField.setPrefHeight(45);
         verificationCodeField.setMaxWidth(220);
         verificationCodeField.setAlignment(Pos.CENTER);
+        
+        // Sadece sayı girişine izin ver
+        verificationCodeField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!newValue.matches("\\d*")) {
+                verificationCodeField.setText(newValue.replaceAll("[^\\d]", ""));
+            }
+            // Maksimum 6 haneli kod için sınırla
+            if (verificationCodeField.getText().length() > 6) {
+                verificationCodeField.setText(verificationCodeField.getText().substring(0, 6));
+            }
+        });
 
         verificationContainer.getChildren().addAll(verificationTitle, verificationDesc, verificationCodeField);
 
