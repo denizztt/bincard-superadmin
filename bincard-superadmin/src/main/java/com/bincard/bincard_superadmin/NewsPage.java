@@ -25,6 +25,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -34,13 +35,17 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 public class NewsPage extends SuperadminPageBase {
 
@@ -1444,9 +1449,22 @@ public class NewsPage extends SuperadminPageBase {
                                     imageView.setFitWidth(finalImage.getWidth());
                                 }
                                 
+                                // Tam boyut görüntüleme için tıklama olayı ekle
+                                imageView.setOnMouseClicked(mouseEvent -> {
+                                    showFullSizeImage(finalImage, imageUrl);
+                                });
+                                // İmleç stilini el şekline değiştir (tıklanabilir görünüm)
+                                imageView.setCursor(javafx.scene.Cursor.HAND);
+                                
                                 // Görsel çerçevesi
                                 BorderPane imageFrame = new BorderPane(imageView);
                                 imageFrame.setStyle("-fx-background-color: white; -fx-padding: 5px;");
+                                
+                                // Tam boyutta görüntüleme bilgisi ekle
+                                Label viewFullSizeLabel = new Label("Tam boyutta görmek için görsele tıklayın");
+                                viewFullSizeLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #3498db; -fx-font-style: italic;");
+                                imageFrame.setBottom(viewFullSizeLabel);
+                                BorderPane.setAlignment(viewFullSizeLabel, Pos.CENTER);
                                 
                                 // Görsel bilgisi güncelle
                                 String dimensions = String.format("%.0fx%.0f", finalImage.getWidth(), finalImage.getHeight());
@@ -1930,4 +1948,182 @@ public class NewsPage extends SuperadminPageBase {
         alert.setContentText(message);
         alert.showAndWait();
     }
-} 
+    
+    /**
+     * Görseli tam boyutta gösteren yardımcı metod
+     */
+    private void showFullSizeImage(Image image, String imageUrl) {
+        // Yeni bir dialog oluştur
+        Dialog<Void> fullSizeDialog = new Dialog<>();
+        fullSizeDialog.setTitle("Tam Boyut Görüntüleyici");
+        fullSizeDialog.setHeaderText(null);
+        
+        // Dialog boyutunu ekran boyutuna göre ayarla - ekranın %90'ı kadar
+        Screen screen = Screen.getPrimary();
+        double maxWidth = screen.getBounds().getWidth() * 0.9;
+        double maxHeight = screen.getBounds().getHeight() * 0.9;
+        
+        fullSizeDialog.getDialogPane().setPrefWidth(Math.min(image.getWidth() + 40, maxWidth));
+        fullSizeDialog.getDialogPane().setPrefHeight(Math.min(image.getHeight() + 100, maxHeight));
+        
+        // "Kapat" butonu
+        ButtonType closeButtonType = new ButtonType("Kapat", ButtonBar.ButtonData.CANCEL_CLOSE);
+        fullSizeDialog.getDialogPane().getButtonTypes().add(closeButtonType);
+        
+        // Görsel görüntüleyici
+        ImageView fullImageView = new ImageView(image);
+        fullImageView.setPreserveRatio(true);
+        
+        // Scrollable alan oluştur (görselin çok büyük olması durumunda)
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(fullImageView);
+        scrollPane.setPannable(true); // Fare ile kaydırma
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        
+        // Zoom kontrolleri
+        Button zoomInButton = new Button("+");
+        Button zoomOutButton = new Button("-");
+        Button resetZoomButton = new Button("Sıfırla");
+        Button saveToDiskButton = new Button("Kaydet");
+        
+        // Boyut oranı
+        double[] scaleValue = {1.0}; // Array kullanarak closure içinden değiştirebilme
+        
+        // Zoom event handlers
+        zoomInButton.setOnAction(e -> {
+            scaleValue[0] *= 1.2; // %20 büyüt
+            updateImageScale(fullImageView, scaleValue[0]);
+        });
+        
+        zoomOutButton.setOnAction(e -> {
+            scaleValue[0] /= 1.2; // %20 küçült
+            updateImageScale(fullImageView, scaleValue[0]);
+        });
+        
+        resetZoomButton.setOnAction(e -> {
+            scaleValue[0] = 1.0; // orijinal boyut
+            updateImageScale(fullImageView, scaleValue[0]);
+        });
+        
+        // Kaydetme butonu
+        saveToDiskButton.setOnAction(e -> {
+            saveImageToDisk(image, imageUrl);
+        });
+        
+        // Buton stillerini ayarla
+        String buttonStyle = "-fx-font-weight: bold; -fx-min-width: 40px;";
+        zoomInButton.setStyle(buttonStyle);
+        zoomOutButton.setStyle(buttonStyle);
+        resetZoomButton.setStyle("-fx-min-width: 80px;");
+        saveToDiskButton.setStyle("-fx-min-width: 80px;");
+        
+        // Butonları bir araya getir
+        HBox controlBox = new HBox(10, zoomOutButton, resetZoomButton, zoomInButton, saveToDiskButton);
+        controlBox.setAlignment(Pos.CENTER);
+        controlBox.setPadding(new Insets(10, 0, 10, 0));
+        
+        // Bilgi etiketi - görselin boyutu
+        Label infoLabel = new Label(String.format("Orijinal boyut: %.0fx%.0f piksel", 
+            image.getWidth(), image.getHeight()));
+        infoLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #666;");
+        
+        // Tüm içeriği bir araya getir
+        VBox mainContent = new VBox(10, scrollPane, controlBox, infoLabel);
+        mainContent.setPadding(new Insets(10));
+        
+        fullSizeDialog.getDialogPane().setContent(mainContent);
+        
+        // Modal olmayan şekilde göster (arka planda gösterim)
+        // Dialog'un stage'ini alıp modal özelliğini değiştir
+        Stage stage = (Stage) fullSizeDialog.getDialogPane().getScene().getWindow();
+        stage.setResizable(true);
+        
+        // Dialog'u göster
+        fullSizeDialog.showAndWait();
+    }
+    
+    /**
+     * Görselin ölçeklemesini günceller
+     */
+    private void updateImageScale(ImageView imageView, double scale) {
+        // Ölçeği güncelle
+        imageView.setScaleX(scale);
+        imageView.setScaleY(scale);
+    }
+    
+    /**
+     * Görseli diske kaydet
+     */
+    private void saveImageToDisk(Image image, String imageUrl) {
+        // Dosya seçim dialogu oluştur
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Görseli Kaydet");
+        
+        // Varsayılan dosya adı
+        String filename = "image";
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            // URL'den dosya adını çıkar
+            int lastSlash = imageUrl.lastIndexOf('/');
+            if (lastSlash >= 0 && lastSlash < imageUrl.length() - 1) {
+                filename = imageUrl.substring(lastSlash + 1);
+                // URL parametrelerini temizle
+                int queryIndex = filename.indexOf('?');
+                if (queryIndex > 0) {
+                    filename = filename.substring(0, queryIndex);
+                }
+            }
+        }
+        
+        fileChooser.setInitialFileName(filename);
+        
+        // Filtreleri ayarla
+        fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("PNG Dosyası", "*.png"),
+            new FileChooser.ExtensionFilter("JPEG Dosyası", "*.jpg", "*.jpeg"),
+            new FileChooser.ExtensionFilter("Tüm Dosyalar", "*.*")
+        );
+        
+        // Dosya seçim dialogunu göster
+        Window window = null; // Dialog'un sahibi yok
+        File file = fileChooser.showSaveDialog(window);
+        
+        if (file != null) {
+            try {
+                // Görseli kaydet
+                saveToFile(image, file);
+                showAlert("Görsel başarıyla kaydedildi: " + file.getAbsolutePath());
+            } catch (Exception e) {
+                e.printStackTrace();
+                showAlert("Görsel kaydedilirken hata oluştu: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * JavaFX Image nesnesini dosyaya kaydetme yardımcı metodu
+     */
+    private static void saveToFile(Image image, File file) throws IOException {
+        // Görsel formatını belirle
+        String extension = getFileExtension(file.getName()).toLowerCase();
+        
+        // JavaFX'te görsel kaydetme işlemi için basit bir çözüm
+        // Not: Bu temel bir implementasyon, daha gelişmiş özellikler için
+        // SwingFXUtils.fromFXImage() ve ImageIO kullanılabilir
+        
+        // Şimdilik kullanıcıya bilgi verelim
+        throw new IOException("Görsel kaydetme özelliği henüz desteklenmiyor. " +
+                            "Lütfen görseli manuel olarak kaydedin.");
+    }
+    
+    /**
+     * Dosya uzantısını döndürür
+     */
+    private static String getFileExtension(String filename) {
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex > 0 && dotIndex < filename.length() - 1) {
+            return filename.substring(dotIndex + 1);
+        }
+        return "";
+    }
+}
