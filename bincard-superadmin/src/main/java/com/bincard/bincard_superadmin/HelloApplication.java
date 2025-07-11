@@ -16,24 +16,9 @@ public class HelloApplication extends Application {
         
         appHostServices = getHostServices();
         
-        // Kayıtlı token'ları kontrol et
-        try {
-            System.out.println("Kayıtlı token'lar kontrol ediliyor...");
-            TokenResponse savedTokens = ApiClientFX.getSavedTokens();
-            
-            if (savedTokens != null) {
-                System.out.println("Geçerli token'lar bulundu, doğrudan dashboard'a yönlendiriliyor.");
-                new SuperadminDashboardFX(primaryStage, savedTokens.getAccessToken(), savedTokens.getRefreshToken());
-            } else {
-                System.out.println("Geçerli token bulunamadı, giriş ekranına yönlendiriliyor.");
-                new MainMenuFX(primaryStage);
-            }
-        } catch (Exception e) {
-            System.err.println("Token kontrolü sırasında hata: " + e.getMessage());
-            e.printStackTrace();
-            // Hata durumunda normal giriş ekranına yönlendir
-            new MainMenuFX(primaryStage);
-        }
+        // Her seferinde giriş ekranını göster (otomatik giriş devre dışı)
+        System.out.println("Giriş ekranına yönlendiriliyor...");
+        new MainMenuFX(primaryStage);
         
         primaryStage.show();
     }

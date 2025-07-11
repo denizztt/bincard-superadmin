@@ -1382,4 +1382,18 @@ public class ApiClientFX {
             }
         }
     }
+    
+    /**
+     * Kaydedilmiş token'ları temizler
+     * Çıkış işlemlerinde kullanılır
+     */
+    public static void clearSavedTokens() {
+        try {
+            TokenSecureStorage.clearTokens();
+            System.out.println("Kaydedilmiş token'lar başarıyla temizlendi.");
+        } catch (Exception e) {
+            System.err.println("Token temizleme sırasında hata: " + e.getMessage());
+            throw e;
+        }
+    }
 }

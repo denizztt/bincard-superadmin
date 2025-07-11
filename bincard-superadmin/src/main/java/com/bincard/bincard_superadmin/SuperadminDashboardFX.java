@@ -885,6 +885,16 @@ public class SuperadminDashboardFX {
     
     private void logout() {
         // Çıkış işlemleri (token temizleme vb.)
+        try {
+            // Kayıtlı token'ları temizle
+            System.out.println("Çıkış yapılıyor, token'lar temizleniyor...");
+            ApiClientFX.clearSavedTokens();
+            System.out.println("Token'lar başarıyla temizlendi.");
+        } catch (Exception e) {
+            System.err.println("Token temizleme sırasında hata: " + e.getMessage());
+        }
+        
+        // Ana menüye dön
         new MainMenuFX(stage);
     }
     
