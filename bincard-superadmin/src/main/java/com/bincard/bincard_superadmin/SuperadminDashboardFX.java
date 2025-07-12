@@ -109,12 +109,19 @@ public class SuperadminDashboardFX {
         driversMenu.addSubItem(new MenuItem("Şoför Düzenle", accentColor2, FontAwesomeSolid.USER_EDIT, "DriverEdit"));
         driversMenu.addSubItem(new MenuItem("Şoför Sil", accentColor2, FontAwesomeSolid.USER_MINUS, "DriverDelete"));
         
+        // Ödeme Noktaları menüsü
+        MenuItem paymentPointsMenu = new MenuItem("Ödeme Noktaları", accentColor3, FontAwesomeSolid.CREDIT_CARD);
+        paymentPointsMenu.addSubItem(new MenuItem("Ödeme Noktası Ekle", accentColor3, FontAwesomeSolid.PLUS_CIRCLE, "PaymentPointAdd"));
+        paymentPointsMenu.addSubItem(new MenuItem("Tablo Görünümü", accentColor3, FontAwesomeSolid.TABLE, "PaymentPointsList"));
+        paymentPointsMenu.addSubItem(new MenuItem("Harita Görünümü", accentColor3, FontAwesomeSolid.MAP_MARKED_ALT, "PaymentPointsMap"));
+        
         // Alfabetik sırada menü listesine ekle
         menuItems.add(approvals);  // Admin Onayları
         menuItems.add(auditLogs);  // Denetim Kayıtları
         menuItems.add(stopsMenu);  // Duraklar
         menuItems.add(newsMenu);   // Haberler
         menuItems.add(stats);      // İstatistikler
+        menuItems.add(paymentPointsMenu); // Ödeme Noktaları
         menuItems.add(usersMenu);  // Kullanıcılar
         menuItems.add(routesMenu); // Otobüs Rotaları
         menuItems.add(busesMenu);  // Otobüsler
@@ -845,10 +852,20 @@ public class SuperadminDashboardFX {
                     showUnderConstructionAlert("Yıllık Raporlar");
                     break;
                     
+                // Ödeme Noktaları sayfaları
+                case "PaymentPointsList":
+                    new PaymentPointsTablePage(stage, accessToken, refreshToken);
+                    break;
+                case "PaymentPointsMap":
+                    new PaymentPointsMapPage(stage, accessToken, refreshToken);
+                    break;
+                case "PaymentPointAdd":
+                    new PaymentPointAddPage(stage, accessToken, refreshToken);
+                    break;
+                    
                 // Eski sayfalar ve diğerleri
                 case "Otobüs Kartları":
                 case "Geri Bildirimler":
-                case "Ödeme Noktaları":
                 case "Raporlar":
                 case "Otobüs Rotaları":
                 case "Duraklar":
@@ -888,7 +905,7 @@ public class SuperadminDashboardFX {
         try {
             // Kayıtlı token'ları temizle
             System.out.println("Çıkış yapılıyor, token'lar temizleniyor...");
-            ApiClientFX.clearSavedTokens();
+            AuthApiClient.clearSavedTokens();
             System.out.println("Token'lar başarıyla temizlendi.");
         } catch (Exception e) {
             System.err.println("Token temizleme sırasında hata: " + e.getMessage());

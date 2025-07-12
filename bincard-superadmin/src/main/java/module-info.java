@@ -13,8 +13,8 @@ module com.bincard.bincard_superadmin {
     requires com.almasb.fxgl.all;
     
     // FontAwesome için gerekli modüller
-    requires org.kordamp.ikonli.fontawesome5;
-    requires org.kordamp.ikonli.core;
+    requires transitive org.kordamp.ikonli.fontawesome5;
+    requires transitive org.kordamp.ikonli.core;
 
     opens com.bincard.bincard_superadmin to javafx.fxml;
     exports com.bincard.bincard_superadmin;

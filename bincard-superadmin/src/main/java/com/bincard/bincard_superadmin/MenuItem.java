@@ -2,7 +2,6 @@ package com.bincard.bincard_superadmin;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.kordamp.ikonli.Ikon;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 
 /**
@@ -14,7 +13,7 @@ public class MenuItem {
     private String color;
     private List<MenuItem> subItems;
     private String targetPage; // Alt menü öğesi için hangi sayfayı açacağını belirler
-    private Ikon icon; // Menü öğesi için ikon
+    private FontAwesomeSolid icon; // Menü öğesi için ikon
 
     public MenuItem(String title, String color) {
         this.title = title;
@@ -29,12 +28,12 @@ public class MenuItem {
         this.targetPage = targetPage;
     }
     
-    public MenuItem(String title, String color, Ikon icon) {
+    public MenuItem(String title, String color, FontAwesomeSolid icon) {
         this(title, color);
         this.icon = icon;
     }
     
-    public MenuItem(String title, String color, Ikon icon, String targetPage) {
+    public MenuItem(String title, String color, FontAwesomeSolid icon, String targetPage) {
         this(title, color);
         this.icon = icon;
         this.targetPage = targetPage;
@@ -64,11 +63,11 @@ public class MenuItem {
         return targetPage;
     }
     
-    public Ikon getIcon() {
+    public FontAwesomeSolid getIcon() {
         return icon;
     }
     
-    public void setIcon(Ikon icon) {
+    public void setIcon(FontAwesomeSolid icon) {
         this.icon = icon;
     }
     

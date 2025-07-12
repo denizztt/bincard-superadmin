@@ -205,7 +205,7 @@ public class SuperadminSignupFX {
         new Thread(() -> {
             try {
                 // Kayıt API'sini çağır
-                LoginResponse response = ApiClientFX.signup(name, surname, phoneOnlyDigits, password, email);
+                LoginResponse response = AuthApiClient.signup(name, surname, phoneOnlyDigits, password, email);
                 
                 // UI thread'inde sonucu göster
                 Platform.runLater(() -> {

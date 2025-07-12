@@ -33,7 +33,6 @@ public class SuperadminLoginFX {
     private Label countdownLabel;
     private Stage stage;
     private String currentPhone;
-    private String currentPassword;
     private boolean isVerificationStep = false;
     private TokenDTO accessToken;
     private TokenDTO refreshToken;
@@ -251,13 +250,12 @@ public class SuperadminLoginFX {
             try {
                 // İlk aşama: Telefon ve şifre ile giriş
                 // Bu aşamada SMS doğrulama kodu gönderilir
-                LoginResponse response = ApiClientFX.login(phoneOnlyDigits, password);
+                LoginResponse response = AuthApiClient.login(phoneOnlyDigits, password);
                 
                 Platform.runLater(() -> {
                     if (response.isSuccess()) {
                         // Doğrulama adımına geç
                         currentPhone = phoneOnlyDigits;
-                        currentPassword = password;
                         isVerificationStep = true;
                         
                         // UI'ı doğrulama moduna geçir
@@ -299,7 +297,7 @@ public class SuperadminLoginFX {
         // Arka planda doğrulama işlemini yap
         new Thread(() -> {
             try {
-                TokenResponse tokenResponse = ApiClientFX.phoneVerify(currentPhone, verificationCode);
+                TokenResponse tokenResponse = AuthApiClient.phoneVerify(currentPhone, verificationCode);
                 
                 // Token'ları sakla
                 accessToken = tokenResponse.getAccessToken();
@@ -379,7 +377,7 @@ public class SuperadminLoginFX {
     private void refreshAccessToken() {
         try {
             System.out.println("Access token yenileniyor...");
-            TokenDTO newAccessToken = ApiClientFX.refreshToken(refreshToken.getToken());
+            TokenDTO newAccessToken = AuthApiClient.refreshToken(refreshToken.getToken());
             accessToken = newAccessToken;
             
             // Yeni token için zamanlayıcıyı tekrar ayarla
@@ -472,7 +470,7 @@ public class SuperadminLoginFX {
                 String phoneOnlyDigits = currentPhone.replaceAll("[^0-9]", "");
                 
                 // API'ye yeniden doğrulama kodu gönderme isteği yap
-                String response = ApiClientFX.resendVerificationCode(phoneOnlyDigits);
+                String response = AuthApiClient.resendVerificationCode(phoneOnlyDigits);
                 
                 // UI thread'inde sonucu göster
                 Platform.runLater(() -> {
