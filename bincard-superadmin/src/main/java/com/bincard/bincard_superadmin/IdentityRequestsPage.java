@@ -409,7 +409,7 @@ public class IdentityRequestsPage extends SuperadminPageBase {
                     endDateParam = endDatePicker.getValue().toString();
                 }
                 
-                String response = ApiClientFX.getIdentityRequests(
+                String response = WalletApiClient.getIdentityRequests(
                     accessToken, statusParam, startDateParam, endDateParam, 
                     0, 100, "requestedAt", "desc"
                 );
@@ -1005,7 +1005,7 @@ public class IdentityRequestsPage extends SuperadminPageBase {
             // API çağrısı
             CompletableFuture.runAsync(() -> {
                 try {
-                    String response = ApiClientFX.processIdentityRequest(
+                    String response = WalletApiClient.processIdentityRequest(
                         accessToken, request.getId(), approve, note
                     );
                     

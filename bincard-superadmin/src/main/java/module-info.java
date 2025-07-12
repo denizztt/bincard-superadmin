@@ -1,4 +1,5 @@
 module com.bincard.bincard_superadmin {
+    requires javafx.base;
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.web;

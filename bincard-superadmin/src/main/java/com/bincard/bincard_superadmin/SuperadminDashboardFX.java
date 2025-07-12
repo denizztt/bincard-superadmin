@@ -748,7 +748,7 @@ public class SuperadminDashboardFX {
                     new AuditLogsPage(stage, accessToken, refreshToken);
                     break;
                 case "Statistics":
-                    new IncomeReportsPage(stage, accessToken, refreshToken);
+                    new StatisticsPage(stage, accessToken, refreshToken);
                     break;
                     
                 // Otobüs alt sayfaları
