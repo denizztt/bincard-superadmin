@@ -40,11 +40,12 @@ public class PaymentPointApiClient {
     public static String getAllPaymentPoints(int page, int size, String sort) throws IOException {
         String endpoint = BASE_URL + "/payment-point?page=" + page + "&size=" + size + "&sort=" + sort;
         
-        System.out.println("🌐 API İSTEĞİ GÖNDERİLİYOR:");
-        System.out.println("   - Endpoint: " + endpoint);
-        System.out.println("   - Sayfa: " + page + " (0-tabanlı, backend formatı)");
-        System.out.println("   - Boyut: " + size);
-        System.out.println("   - Sıralama: " + sort);
+        System.out.println("\n🌐 API İSTEĞİ GÖNDERİLİYOR:");
+        System.out.println("   📍 Endpoint: " + endpoint);
+        System.out.println("   📄 Sayfa: " + page + " (0-tabanlı, backend formatı)");
+        System.out.println("   📊 Boyut: " + size + " kayıt per sayfa");
+        System.out.println("   🔢 Sıralama: " + sort);
+        System.out.println("   🎯 Hedef: http://localhost:8080/v1/api/payment-point?page=" + page);
         
         URL url = createURL(endpoint);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -53,8 +54,185 @@ public class PaymentPointApiClient {
         // Token gönderilmiyor - postman testine göre gerekli değil
 
         String response = executeRequest(conn, "Sayfalı ödeme noktaları alınamadı");
-        System.out.println("✅ API YANITI ALINDI, uzunluk: " + response.length());
+        
+        System.out.println("✅ API YANITI ALINDI:");
+        System.out.println("   📋 Yanıt uzunluğu: " + response.length() + " karakter");
+        
+        // Veriyi düzenli formatta yazdır
+        printFormattedResponse(page, response);
+        
         return response;
+    }
+    
+    /**
+     * API yanıtını düzenli formatta yazdırır
+     */
+    private static void printFormattedResponse(int page, String response) {
+        try {
+            System.out.println("\n📊 ====== SAYFA " + page + " VERİ ANALİZİ ======");
+            
+            if (response == null || response.trim().isEmpty()) {
+                System.out.println("❌ Boş yanıt alındı!");
+                return;
+            }
+            
+            // Sayfalama bilgilerini çıkar
+            int totalElements = extractIntFromJson(response, "totalElements");
+            int totalPages = extractIntFromJson(response, "totalPages");
+            int pageNumber = extractIntFromJson(response, "pageNumber");
+            int pageSize = extractIntFromJson(response, "pageSize");
+            boolean first = response.contains("\"first\":true");
+            boolean last = response.contains("\"last\":true");
+            
+            System.out.println("📈 SAYFALAMA BİLGİLERİ:");
+            System.out.println("   🔢 Toplam Kayıt: " + totalElements);
+            System.out.println("   📄 Toplam Sayfa: " + totalPages);
+            System.out.println("   📍 Mevcut Sayfa: " + pageNumber + " (0-tabanlı)");
+            System.out.println("   📊 Sayfa Boyutu: " + pageSize);
+            System.out.println("   ⏮️ İlk Sayfa mı: " + (first ? "✅ Evet" : "❌ Hayır"));
+            System.out.println("   ⏭️ Son Sayfa mı: " + (last ? "✅ Evet" : "❌ Hayır"));
+            
+            // Content array'ini bul ve kayıt sayısını say
+            int recordCount = 0;
+            if (response.contains("\"content\":[")) {
+                String contentStart = "\"content\":[";
+                int startIndex = response.indexOf(contentStart);
+                if (startIndex != -1) {
+                    int endIndex = findArrayEnd(response, startIndex + contentStart.length());
+                    if (endIndex != -1) {
+                        String contentArray = response.substring(startIndex + contentStart.length(), endIndex);
+                        // Basit object sayma - her { için bir kayıt
+                        recordCount = countJsonObjects(contentArray);
+                    }
+                }
+            }
+            
+            System.out.println("\n📋 SAYFA İÇERİĞİ:");
+            System.out.println("   🎯 Bu sayfadaki kayıt: " + recordCount);
+            System.out.println("   💾 Beklenen kayıt: " + Math.min(pageSize, Math.max(0, totalElements - (pageNumber * pageSize))));
+            
+            // Sayfa navigasyon durumu
+            System.out.println("\n🧭 NAVİGASYON DURUMU:");
+            System.out.println("   ◀️ Önceki sayfa (" + Math.max(0, pageNumber - 1) + "): " + (!first ? "✅ Mevcut" : "❌ Yok"));
+            System.out.println("   ▶️ Sonraki sayfa (" + (pageNumber + 1) + "): " + (!last ? "✅ Mevcut" : "❌ Yok"));
+            
+            // API format doğrulama
+            System.out.println("\n🔍 API FORMAT DOĞRULAMA:");
+            if (response.contains("\"success\":true")) {
+                System.out.println("   ✅ Standard API format: {\"success\": true, \"data\": {...}}");
+            } else if (response.startsWith("[") && response.endsWith("]")) {
+                System.out.println("   ⚠️ Direkt array format: [...]");
+            } else if (response.contains("\"content\":[")) {
+                System.out.println("   ✅ Spring Page format: {\"content\": [...], \"totalElements\": ...}");
+            } else {
+                System.out.println("   ❌ Tanınmayan format!");
+            }
+            
+            System.out.println("📊 ====== SAYFA " + page + " ANALİZ BİTTİ ======\n");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Veri analizi hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * JSON array'inin sonunu bulur
+     */
+    private static int findArrayEnd(String json, int startIndex) {
+        int bracketCount = 0;
+        boolean inString = false;
+        boolean escapeNext = false;
+        
+        for (int i = startIndex; i < json.length(); i++) {
+            char c = json.charAt(i);
+            
+            if (escapeNext) {
+                escapeNext = false;
+                continue;
+            }
+            
+            if (c == '\\') {
+                escapeNext = true;
+                continue;
+            }
+            
+            if (c == '"' && !escapeNext) {
+                inString = !inString;
+                continue;
+            }
+            
+            if (!inString) {
+                if (c == '[') {
+                    bracketCount++;
+                } else if (c == ']') {
+                    if (bracketCount == 0) {
+                        return i;
+                    }
+                    bracketCount--;
+                }
+            }
+        }
+        
+        return -1;
+    }
+    
+    /**
+     * JSON array'indeki object sayısını sayar
+     */
+    private static int countJsonObjects(String jsonArray) {
+        int objectCount = 0;
+        int braceCount = 0;
+        boolean inString = false;
+        boolean escapeNext = false;
+        
+        for (int i = 0; i < jsonArray.length(); i++) {
+            char c = jsonArray.charAt(i);
+            
+            if (escapeNext) {
+                escapeNext = false;
+                continue;
+            }
+            
+            if (c == '\\') {
+                escapeNext = true;
+                continue;
+            }
+            
+            if (c == '"' && !escapeNext) {
+                inString = !inString;
+                continue;
+            }
+            
+            if (!inString) {
+                if (c == '{') {
+                    if (braceCount == 0) {
+                        objectCount++; // Yeni object başlıyor
+                    }
+                    braceCount++;
+                } else if (c == '}') {
+                    braceCount--;
+                }
+            }
+        }
+        
+        return objectCount;
+    }
+    
+    /**
+     * JSON'dan integer değer çıkarır
+     */
+    private static int extractIntFromJson(String json, String key) {
+        try {
+            String pattern = "\"" + key + "\"\\s*:\\s*([0-9]+)";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) {
+                return Integer.parseInt(m.group(1));
+            }
+        } catch (Exception e) {
+            // Hata durumunda 0 döndür
+        }
+        return 0;
     }
 
     /**

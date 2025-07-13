@@ -30,7 +30,8 @@ import javafx.stage.Stage;
 
 public class PaymentPointsTablePage extends SuperadminPageBase {
 
-    private List<PaymentPoint> paymentPointsList;
+    // paymentPointsList erişimini public yap
+    public List<PaymentPoint> paymentPointsList;
     private TableView<PaymentPoint> paymentPointsTable;
     private TextField searchField;
     private ComboBox<String> cityFilter;
@@ -300,7 +301,52 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         refreshButton.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-background-radius: 5;");
         refreshButton.setOnAction(e -> loadPaymentPointsData());
 
-        controls.getChildren().addAll(addButton, editButton, toggleStatusButton, deleteButton, refreshButton);
+        // Haritada Göster butonu
+        Button mapButton = new Button("Haritada Göster");
+        mapButton.setStyle("-fx-background-color: #16a085; -fx-text-fill: white; -fx-background-radius: 5;");
+        mapButton.setOnAction(e -> {
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    PaymentPointsMapPage.showMap(stage, paymentPointsList);
+                } catch (Exception ex) {
+                    System.err.println("Harita gösterilirken hata: " + ex.getMessage());
+                    ex.printStackTrace();
+                    showAlert("Harita gösterilirken hata oluştu: " + ex.getMessage());
+                }
+            });
+        });
+
+        // Haritada Tümünü Göster butonu
+        Button mapAllButton = new Button("Haritada Tümünü Göster");
+        mapAllButton.setStyle("-fx-background-color: #1abc9c; -fx-text-fill: white; -fx-background-radius: 5;");
+        mapAllButton.setOnAction(e -> {
+            new Thread(() -> {
+                try {
+                    String response = PaymentPointApiClient.getAllPaymentPoints(0, 1000, "name");
+                    List<PaymentPoint> allPoints = new ArrayList<>();
+                    if (response != null && !response.isEmpty()) {
+                        // Aynı parse fonksiyonunu kullanmak için geçici bir listeye at
+                        List<PaymentPoint> tempList = paymentPointsList;
+                        paymentPointsList = allPoints;
+                        parsePaymentPointsResponse(response);
+                        paymentPointsList = tempList;
+                    }
+                    javafx.application.Platform.runLater(() -> {
+                        try {
+                            PaymentPointsMapPage.showMap(stage, allPoints);
+                        } catch (Exception ex) {
+                            System.err.println("Tüm noktalar haritada gösterilirken hata: " + ex.getMessage());
+                            ex.printStackTrace();
+                            showAlert("Tüm ödeme noktaları haritada gösterilemedi: " + ex.getMessage());
+                        }
+                    });
+                } catch (Exception ex) {
+                    javafx.application.Platform.runLater(() -> showAlert("Tüm ödeme noktaları haritada gösterilemedi: " + ex.getMessage()));
+                }
+            }).start();
+        });
+
+        controls.getChildren().addAll(addButton, editButton, toggleStatusButton, deleteButton, refreshButton, mapButton, mapAllButton);
         return controls;
     }
 
@@ -483,7 +529,8 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         return null;
     }
 
-    private void parsePaymentPointsResponse(String response) {
+    // parsePaymentPointsResponse erişimini public yap
+    public void parsePaymentPointsResponse(String response) {
         // JSON yanıtını parse et
         if (paymentPointsList == null) {
             paymentPointsList = new ArrayList<>();

@@ -4,6 +4,8 @@ module com.bincard.bincard_superadmin {
     requires javafx.fxml;
     requires javafx.web;
     requires transitive javafx.graphics;
+    
+    requires java.desktop;
 
     requires org.controlsfx.controls;
     requires com.dlsc.formsfx;

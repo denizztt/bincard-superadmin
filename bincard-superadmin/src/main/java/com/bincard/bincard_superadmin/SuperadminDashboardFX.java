@@ -857,7 +857,30 @@ public class SuperadminDashboardFX {
                     new PaymentPointsTablePage(stage, accessToken, refreshToken);
                     break;
                 case "PaymentPointsMap":
-                    new PaymentPointsMapPage(stage, accessToken, refreshToken);
+                    // Tüm ödeme noktalarını çekip haritada göster
+                    new Thread(() -> {
+                        try {
+                            String response = PaymentPointApiClient.getAllPaymentPoints(0, 1000, "name");
+                            List<PaymentPointsTablePage.PaymentPoint> allPoints = new ArrayList<>();
+                            if (response != null && !response.isEmpty()) {
+                                // Geçici bir PaymentPointsTablePage ile parse
+                                PaymentPointsTablePage dummy = new PaymentPointsTablePage(stage, accessToken, refreshToken);
+                                dummy.parsePaymentPointsResponse(response);
+                                allPoints.addAll(dummy.paymentPointsList);
+                            }
+                            javafx.application.Platform.runLater(() -> {
+                                PaymentPointsMapPage.showMap(stage, allPoints);
+                            });
+                        } catch (Exception ex) {
+                            javafx.application.Platform.runLater(() -> {
+                                Alert alert = new Alert(Alert.AlertType.ERROR);
+                                alert.setTitle("Harita Hatası");
+                                alert.setHeaderText("Harita açılamadı");
+                                alert.setContentText("Tüm ödeme noktaları haritada gösterilemedi: " + ex.getMessage());
+                                alert.showAndWait();
+                            });
+                        }
+                    }).start();
                     break;
                 case "PaymentPointAdd":
                     new PaymentPointAddPage(stage, accessToken, refreshToken);
