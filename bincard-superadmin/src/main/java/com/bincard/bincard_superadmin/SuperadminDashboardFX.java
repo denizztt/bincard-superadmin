@@ -16,16 +16,20 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.application.HostServices;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 // İkon destekleri için import
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
+import javafx.scene.web.WebView;
+import javafx.scene.web.WebEngine;
 
 public class SuperadminDashboardFX {
     private Stage stage;
@@ -618,7 +622,13 @@ public class SuperadminDashboardFX {
         // Gelir verilerini API'dan yükle ve kartları güncelle
         loadDashboardData(dailyIncome);
         
-        content.getChildren().addAll(welcomeTitle, description, timeLabel, statsContainer);
+        // Hızlı erişim butonları
+        HBox quickActionsContainer = new HBox(15);
+        quickActionsContainer.setAlignment(Pos.CENTER);
+        quickActionsContainer.setPadding(new Insets(40, 0, 0, 0));
+        // Harita butonunu kaldırdım, quickActionsContainer'a ekleme yok
+        content.getChildren().clear();
+        content.getChildren().addAll(welcomeTitle, description, timeLabel, statsContainer, quickActionsContainer);
         
         return content;
     }
@@ -857,19 +867,25 @@ public class SuperadminDashboardFX {
                     new PaymentPointsTablePage(stage, accessToken, refreshToken);
                     break;
                 case "PaymentPointsMap":
-                    // Tüm ödeme noktalarını çekip haritada göster
                     new Thread(() -> {
                         try {
                             String response = PaymentPointApiClient.getAllPaymentPoints(0, 1000, "name");
                             List<PaymentPointsTablePage.PaymentPoint> allPoints = new ArrayList<>();
                             if (response != null && !response.isEmpty()) {
-                                // Geçici bir PaymentPointsTablePage ile parse
                                 PaymentPointsTablePage dummy = new PaymentPointsTablePage(stage, accessToken, refreshToken);
                                 dummy.parsePaymentPointsResponse(response);
                                 allPoints.addAll(dummy.paymentPointsList);
                             }
                             javafx.application.Platform.runLater(() -> {
-                                PaymentPointsMapPage.showMap(stage, allPoints);
+                                try {
+                                    PaymentPointsMapPage.showMap(stage, allPoints);
+                                } catch (Exception ex) {
+                                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                                    alert.setTitle("Harita Hatası");
+                                    alert.setHeaderText("Harita açılamadı");
+                                    alert.setContentText("Harita açılırken hata: " + ex.getMessage());
+                                    alert.showAndWait();
+                                }
                             });
                         } catch (Exception ex) {
                             javafx.application.Platform.runLater(() -> {

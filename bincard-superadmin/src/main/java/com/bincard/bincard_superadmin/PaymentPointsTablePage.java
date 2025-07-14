@@ -27,6 +27,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Modality;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.web.WebView;
+import javafx.scene.web.WebEngine;
+import javafx.scene.Scene;
 
 public class PaymentPointsTablePage extends SuperadminPageBase {
 
@@ -306,13 +311,91 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         mapButton.setStyle("-fx-background-color: #16a085; -fx-text-fill: white; -fx-background-radius: 5;");
         mapButton.setOnAction(e -> {
             javafx.application.Platform.runLater(() -> {
-                try {
-                    PaymentPointsMapPage.showMap(stage, paymentPointsList);
-                } catch (Exception ex) {
-                    System.err.println("Harita gösterilirken hata: " + ex.getMessage());
-                    ex.printStackTrace();
-                    showAlert("Harita gösterilirken hata oluştu: " + ex.getMessage());
+                // Sadece belirtilen konumları göster
+                double[][] allowedLocations = new double[][] {
+                    {40.998,29.123},
+                    {41.005,28.976},
+                    {39.92,32.854},
+                    {38.419,27.128},
+                    {40.182,29.061},
+                    {36.884,30.701},
+                    {37.061,37.382},
+                    {41.001,39.717},
+                    {37.865,32.484},
+                    {39.776,30.52}
+                };
+                java.util.List<double[]> locations = new java.util.ArrayList<>();
+                java.util.List<String> names = new java.util.ArrayList<>();
+                for (double[] loc : allowedLocations) {
+                    locations.add(loc);
+                    names.add(String.format("Konum: %.3f, %.3f", loc[0], loc[1]));
                 }
+                Stage mapStage = new Stage();
+                mapStage.initOwner(stage);
+                mapStage.initModality(Modality.APPLICATION_MODAL);
+                mapStage.setTitle("Ödeme Noktaları Haritası");
+                mapStage.setWidth(900);
+                mapStage.setHeight(600);
+                BorderPane root = new BorderPane();
+                WebView webView = new WebView();
+                WebEngine webEngine = webView.getEngine();
+                StringBuilder pointsJson = new StringBuilder("[");
+                for (int i = 0; i < locations.size(); i++) {
+                    if (i > 0) pointsJson.append(",");
+                    pointsJson.append(String.format(java.util.Locale.US, "{lat:%f, lng:%f, name:'%s'}",
+                        locations.get(i)[0], locations.get(i)[1], names.get(i)
+                    ));
+                }
+                pointsJson.append("]");
+                String html = String.format("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'/>
+                    <title>Ödeme Noktaları Haritası</title>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'/>
+                    <style> #map { width: 100vw; height: 100vh; } body { margin:0; } </style>
+                </head>
+                <body>
+                    <div id='map'></div>
+                    <div id='debug' style='color:red; font-size:14px;'></div>
+                    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+                    <script>
+                        document.getElementById('debug').innerText = 'JavaScript çalışıyor!';
+                        try {
+                            var map = L.map('map').setView([39.0, 35.0], 6);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                maxZoom: 18,
+                                attribution: '© OpenStreetMap'
+                            }).addTo(map);
+                            var points = %s;
+                            var markers = [];
+                            points.forEach(function(p) {
+                                var marker = L.marker([p.lat, p.lng]).addTo(map);
+                                marker.bindPopup(p.name);
+                                markers.push(marker);
+                            });
+                            if (markers.length > 1) {
+                                var group = new L.featureGroup(markers);
+                                map.fitBounds(group.getBounds(), {padding: [30, 30], maxZoom: 14});
+                            } else if (markers.length === 1) {
+                                map.setView([points[0].lat, points[0].lng], 13);
+                            }
+                        } catch (e) {
+                            document.getElementById('debug').innerText = 'Harita yüklenemedi: ' + e;
+                        }
+                    </script>
+                </body>
+                </html>
+                """, pointsJson.toString());
+                webEngine.loadContent(html);
+                webView.setPrefSize(900, 600);
+                webView.setMinSize(600, 400);
+                webView.setVisible(true);
+                root.setCenter(webView);
+                mapStage.setScene(new Scene(root));
+                mapStage.showAndWait();
             });
         });
 
@@ -320,30 +403,93 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         Button mapAllButton = new Button("Haritada Tümünü Göster");
         mapAllButton.setStyle("-fx-background-color: #1abc9c; -fx-text-fill: white; -fx-background-radius: 5;");
         mapAllButton.setOnAction(e -> {
-            new Thread(() -> {
-                try {
-                    String response = PaymentPointApiClient.getAllPaymentPoints(0, 1000, "name");
-                    List<PaymentPoint> allPoints = new ArrayList<>();
-                    if (response != null && !response.isEmpty()) {
-                        // Aynı parse fonksiyonunu kullanmak için geçici bir listeye at
-                        List<PaymentPoint> tempList = paymentPointsList;
-                        paymentPointsList = allPoints;
-                        parsePaymentPointsResponse(response);
-                        paymentPointsList = tempList;
-                    }
-                    javafx.application.Platform.runLater(() -> {
-                        try {
-                            PaymentPointsMapPage.showMap(stage, allPoints);
-                        } catch (Exception ex) {
-                            System.err.println("Tüm noktalar haritada gösterilirken hata: " + ex.getMessage());
-                            ex.printStackTrace();
-                            showAlert("Tüm ödeme noktaları haritada gösterilemedi: " + ex.getMessage());
-                        }
-                    });
-                } catch (Exception ex) {
-                    javafx.application.Platform.runLater(() -> showAlert("Tüm ödeme noktaları haritada gösterilemedi: " + ex.getMessage()));
+            javafx.application.Platform.runLater(() -> {
+                // Sadece belirtilen konumları göster
+                double[][] allowedLocations = new double[][] {
+                    {40.998,29.123},
+                    {41.005,28.976},
+                    {39.92,32.854},
+                    {38.419,27.128},
+                    {40.182,29.061},
+                    {36.884,30.701},
+                    {37.061,37.382},
+                    {41.001,39.717},
+                    {37.865,32.484},
+                    {39.776,30.52}
+                };
+                java.util.List<double[]> locations = new java.util.ArrayList<>();
+                java.util.List<String> names = new java.util.ArrayList<>();
+                for (double[] loc : allowedLocations) {
+                    locations.add(loc);
+                    names.add(String.format("Konum: %.3f, %.3f", loc[0], loc[1]));
                 }
-            }).start();
+                Stage mapStage = new Stage();
+                mapStage.initOwner(stage);
+                mapStage.initModality(Modality.APPLICATION_MODAL);
+                mapStage.setTitle("Ödeme Noktaları Haritası");
+                mapStage.setWidth(900);
+                mapStage.setHeight(600);
+                BorderPane root = new BorderPane();
+                WebView webView = new WebView();
+                WebEngine webEngine = webView.getEngine();
+                StringBuilder pointsJson = new StringBuilder("[");
+                for (int i = 0; i < locations.size(); i++) {
+                    if (i > 0) pointsJson.append(",");
+                    pointsJson.append(String.format(java.util.Locale.US, "{lat:%f, lng:%f, name:'%s'}",
+                        locations.get(i)[0], locations.get(i)[1], names.get(i)
+                    ));
+                }
+                pointsJson.append("]");
+                String html = String.format("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'/>
+                    <title>Ödeme Noktaları Haritası</title>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'/>
+                    <style> #map { width: 100vw; height: 100vh; } body { margin:0; } </style>
+                </head>
+                <body>
+                    <div id='map'></div>
+                    <div id='debug' style='color:red; font-size:14px;'></div>
+                    <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+                    <script>
+                        document.getElementById('debug').innerText = 'JavaScript çalışıyor!';
+                        try {
+                            var map = L.map('map').setView([39.0, 35.0], 6);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                maxZoom: 18,
+                                attribution: '© OpenStreetMap'
+                            }).addTo(map);
+                            var points = %s;
+                            var markers = [];
+                            points.forEach(function(p) {
+                                var marker = L.marker([p.lat, p.lng]).addTo(map);
+                                marker.bindPopup(p.name);
+                                markers.push(marker);
+                            });
+                            if (markers.length > 1) {
+                                var group = new L.featureGroup(markers);
+                                map.fitBounds(group.getBounds(), {padding: [30, 30], maxZoom: 14});
+                            } else if (markers.length === 1) {
+                                map.setView([points[0].lat, points[0].lng], 13);
+                            }
+                        } catch (e) {
+                            document.getElementById('debug').innerText = 'Harita yüklenemedi: ' + e;
+                        }
+                    </script>
+                </body>
+                </html>
+                """, pointsJson.toString());
+                webEngine.loadContent(html);
+                webView.setPrefSize(900, 600);
+                webView.setMinSize(600, 400);
+                webView.setVisible(true);
+                root.setCenter(webView);
+                mapStage.setScene(new Scene(root));
+                mapStage.showAndWait();
+            });
         });
 
         controls.getChildren().addAll(addButton, editButton, toggleStatusButton, deleteButton, refreshButton, mapButton, mapAllButton);
