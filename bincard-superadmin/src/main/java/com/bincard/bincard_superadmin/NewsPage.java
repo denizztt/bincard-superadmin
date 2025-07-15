@@ -353,13 +353,14 @@ public class NewsPage extends SuperadminPageBase {
         Label dateRangeLabel = new Label("Tarih Aralığı:");
         dateRangeLabel.setStyle("-fx-font-size: 14px;");
         
-        startDatePicker = new DatePicker(LocalDate.now().minusMonths(1));
+        // Varsayılan tarih aralığı: 1 yıl önce - 1 yıl sonra
+        startDatePicker = new DatePicker(LocalDate.now().minusYears(1));
         startDatePicker.setPromptText("Başlangıç Tarihi");
         startDatePicker.setStyle("-fx-font-size: 14px;");
         
         Label toLabel = new Label("-");
         
-        endDatePicker = new DatePicker(LocalDate.now());
+        endDatePicker = new DatePicker(LocalDate.now().plusYears(1));
         endDatePicker.setPromptText("Bitiş Tarihi");
         endDatePicker.setStyle("-fx-font-size: 14px;");
         
@@ -402,19 +403,44 @@ public class NewsPage extends SuperadminPageBase {
             return;
         }
         
-        // Tarih aralığına göre filtreleme (gerçek uygulamada API çağrısı olacak)
-        List<News> filteredList = new ArrayList<>();
+        System.out.println("🔄 Tarih filtreleme başlatıldı");
+        System.out.println("   - Başlangıç Tarihi: " + startDate);
+        System.out.println("   - Bitiş Tarihi: " + endDate);
         
-        for (News news : newsList) {
-            LocalDate newsDate = news.getCreatedAt().toLocalDate();
-            if ((newsDate.isEqual(startDate) || newsDate.isAfter(startDate)) && 
-                (newsDate.isEqual(endDate) || newsDate.isBefore(endDate))) {
-                filteredList.add(news);
-            }
+        // Token kontrolü
+        if (accessToken == null) {
+            System.err.println("❌ Access token bulunamadı");
+            showAlert("Hata", "Oturum bulunamadı. Lütfen tekrar giriş yapın.");
+            return;
         }
         
-        newsTable.getItems().clear();
-        newsTable.getItems().addAll(filteredList);
+        try {
+            // Platform seçimi
+            String selectedPlatform = platformFilter.getValue();
+            String platform = "Tümü".equals(selectedPlatform) ? null : selectedPlatform;
+            
+            System.out.println("   - API çağrısı başlatılıyor...");
+            System.out.println("   - Platform: " + selectedPlatform);
+            
+            // Backend API'den tarih aralığına göre haberleri çek
+            String response = ApiClientFX.getNewsBetweenDates(accessToken, startDate, endDate, platform);
+            
+            if (response == null || response.isEmpty()) {
+                System.err.println("❌ API yanıtı boş veya null");
+                showAlert("Uyarı", "Belirtilen tarih aralığında haber bulunamadı.");
+                return;
+            }
+            
+            System.out.println("✅ API Response alındı: " + response.length() + " karakter");
+            
+            // JSON response'u parse et
+            parseNewsResponse(response);
+            
+        } catch (Exception e) {
+            System.err.println("❌ Tarih filtreleme hatası: " + e.getMessage());
+            e.printStackTrace();
+            showAlert("Hata", "Tarih filtreleme işlemi sırasında hata oluştu: " + e.getMessage());
+        }
     }
 
     private TableView<News> createNewsTable() {
@@ -562,8 +588,8 @@ public class NewsPage extends SuperadminPageBase {
             System.out.println("✅ API Response alındı: " + response.length() + " karakter");
             System.out.println("   - Response preview: " + response.substring(0, Math.min(300, response.length())) + "...");
             
-            // Manuel JSON parsing
-            parseNewsFromJson(response);
+            // JSON response'u parse et
+            parseNewsResponse(response);
             
             System.out.println("✅ Toplam " + newsList.size() + " haber parse edildi");
             
@@ -820,6 +846,109 @@ public class NewsPage extends SuperadminPageBase {
         }
         
         return -1;
+    }
+    
+    /**
+     * API'den gelen news response'unu parse eder ve UI'yi günceller
+     */
+    private void parseNewsResponse(String response) {
+        System.out.println("🔄 parseNewsResponse başlatıldı");
+        
+        if (newsList == null) {
+            newsList = new ArrayList<>();
+        }
+        newsList.clear();
+        
+        try {
+            System.out.println("   - Response Length: " + response.length());
+            System.out.println("   - Response Preview: " + response.substring(0, Math.min(300, response.length())) + "...");
+            
+            // Manual JSON parsing for "content" array
+            String contentArray = null;
+            
+            // "content" field'ini bul
+            int contentStart = response.indexOf("\"content\":[");
+            if (contentStart != -1) {
+                contentStart += 11; // "content":[ uzunluğu
+                int bracketCount = 1;
+                int currentPos = contentStart;
+                
+                while (currentPos < response.length() && bracketCount > 0) {
+                    char c = response.charAt(currentPos);
+                    if (c == '[') bracketCount++;
+                    else if (c == ']') bracketCount--;
+                    currentPos++;
+                }
+                
+                if (bracketCount == 0) {
+                    contentArray = response.substring(contentStart, currentPos - 1);
+                    System.out.println("   - Content array bulundu: " + contentArray.length() + " karakter");
+                } else {
+                    System.err.println("❌ Content array parse edilemedi");
+                    return;
+                }
+            } else {
+                System.err.println("❌ Response'da 'content' field'i bulunamadı");
+                return;
+            }
+            
+            // Content array'ini parse et
+            parseContentArray(contentArray);
+            
+            // UI güncelleme
+            newsTable.getItems().clear();
+            newsTable.getItems().addAll(newsList);
+            System.out.println("✅ UI güncellendi: " + newsList.size() + " haber gösteriliyor");
+            
+        } catch (Exception e) {
+            System.err.println("❌ parseNewsResponse hatası: " + e.getMessage());
+            e.printStackTrace();
+            showAlert("Hata", "Haber verisi işlenirken hata oluştu: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Content array'ini parse eder
+     */
+    private void parseContentArray(String contentArray) {
+        System.out.println("📋 Content array parse ediliyor...");
+        
+        // JSON object'leri ayır
+        int objectStart = -1;
+        int braceCount = 0;
+        boolean inString = false;
+        char prevChar = '\0';
+        
+        for (int i = 0; i < contentArray.length(); i++) {
+            char c = contentArray.charAt(i);
+            
+            // String içinde mi kontrol et
+            if (c == '"' && prevChar != '\\') {
+                inString = !inString;
+            }
+            
+            if (!inString) {
+                if (c == '{') {
+                    if (braceCount == 0) {
+                        objectStart = i;
+                    }
+                    braceCount++;
+                } else if (c == '}') {
+                    braceCount--;
+                    if (braceCount == 0 && objectStart != -1) {
+                        // Bir JSON object tamamlandı
+                        String jsonObject = contentArray.substring(objectStart, i + 1);
+                        News news = parseNewsObject(jsonObject);
+                        if (news != null) {
+                            newsList.add(news);
+                            System.out.println("   - Haber eklendi: " + news.getTitle());
+                        }
+                    }
+                }
+            }
+            
+            prevChar = c;
+        }
     }
     
     // Örnek haberler oluşturan yardımcı metod

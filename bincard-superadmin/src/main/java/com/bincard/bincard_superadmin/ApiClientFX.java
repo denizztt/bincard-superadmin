@@ -9,6 +9,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -26,7 +27,7 @@ public class ApiClientFX {
         System.out.println("   - Platform: " + platform);
         System.out.println("   - AccessToken: " + (accessToken != null ? "✅ Mevcut" : "❌ Null"));
         
-        String endpoint = BASE_URL + "/v1/api/news/";
+        String endpoint = BASE_URL + "/news/";
         if (platform != null && !platform.isEmpty() && !platform.equals("Tümü")) {
             endpoint += "?platform=" + platform;
         }
@@ -51,11 +52,21 @@ public class ApiClientFX {
         int code = conn.getResponseCode();
         System.out.println("   - HTTP Response Code: " + code);
         
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(
-                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
-                        "utf-8"))) {
-
+        // Güvenli stream alma
+        InputStream responseStream;
+        if (code == 200) {
+            responseStream = conn.getInputStream();
+        } else {
+            responseStream = conn.getErrorStream();
+            if (responseStream == null) {
+                // Error stream null ise, response message'ı al
+                String errorMsg = conn.getResponseMessage();
+                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
+                throw new IOException("API Hatası: " + code + " - " + errorMsg);
+            }
+        }
+        
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
             StringBuilder response = new StringBuilder();
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
@@ -919,5 +930,80 @@ public class ApiClientFX {
         }
     }
     
+    /**
+     * Belirtilen tarih aralığındaki haberleri getirir
+     */
+    public static String getNewsBetweenDates(TokenDTO accessToken, LocalDate startDate, LocalDate endDate, String platform) throws IOException {
+        System.out.println("📰 getNewsBetweenDates çağrıldı");
+        System.out.println("   - StartDate: " + startDate);
+        System.out.println("   - EndDate: " + endDate);
+        System.out.println("   - Platform: " + platform);
+        System.out.println("   - AccessToken: " + (accessToken != null ? "✅ Mevcut" : "❌ Null"));
+        
+        // Query parameters oluştur
+        StringBuilder queryParams = new StringBuilder();
+        queryParams.append("start=").append(startDate.toString());
+        queryParams.append("&end=").append(endDate.toString());
+        queryParams.append("&page=0&size=100"); // Büyük sayfa boyutu
+        
+        if (platform != null && !platform.isEmpty() && !platform.equals("Tümü")) {
+            queryParams.append("&platform=").append(platform);
+        }
+        
+        String endpoint = BASE_URL + "/news/between-dates?" + queryParams.toString();
+        System.out.println("   - API Endpoint: " + endpoint);
+        
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(endpoint).toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
 
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        
+        System.out.println("   - Authorization Header: Bearer " + accessToken.getToken().substring(0, Math.min(20, accessToken.getToken().length())) + "...");
+
+        int code = conn.getResponseCode();
+        System.out.println("   - HTTP Response Code: " + code);
+        
+        // Güvenli stream alma
+        InputStream responseStream;
+        if (code == 200) {
+            responseStream = conn.getInputStream();
+        } else {
+            responseStream = conn.getErrorStream();
+            if (responseStream == null) {
+                // Error stream null ise, response message'ı al
+                String errorMsg = conn.getResponseMessage();
+                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
+                throw new IOException("API Hatası: " + code + " - " + errorMsg);
+            }
+        }
+        
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
+
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            String responseStr = response.toString();
+            System.out.println("   - Response Length: " + responseStr.length());
+            System.out.println("   - Response Preview: " + responseStr.substring(0, Math.min(200, responseStr.length())) + "...");
+            
+            if (code == 200) {
+                System.out.println("✅ Tarih aralığındaki haberler başarıyla alındı");
+                return responseStr;
+            } else {
+                System.err.println("❌ Tarih aralığındaki haberler alma hatası: " + code + " - " + responseStr);
+                throw new IOException("Tarih aralığındaki haberler alınamadı: " + code + " - " + responseStr);
+            }
+        }
+    }
 }
