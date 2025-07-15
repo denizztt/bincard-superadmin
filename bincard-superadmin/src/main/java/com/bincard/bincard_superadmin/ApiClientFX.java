@@ -22,10 +22,16 @@ public class ApiClientFX {
     // Haber API Metotları
     
     public static String getAllNews(TokenDTO accessToken, String platform) throws IOException {
-        String endpoint = BASE_URL + "/news/";
+        System.out.println("📰 getAllNews çağrıldı");
+        System.out.println("   - Platform: " + platform);
+        System.out.println("   - AccessToken: " + (accessToken != null ? "✅ Mevcut" : "❌ Null"));
+        
+        String endpoint = BASE_URL + "/v1/api/news/";
         if (platform != null && !platform.isEmpty() && !platform.equals("Tümü")) {
             endpoint += "?platform=" + platform;
         }
+        
+        System.out.println("   - API Endpoint: " + endpoint);
         
         // URL yapısını Java 20+ uyumlu şekilde oluştur
         URL url;
@@ -34,13 +40,17 @@ public class ApiClientFX {
         } catch (URISyntaxException e) {
             throw new IOException("Invalid URL: " + e.getMessage(), e);
         }
-        
+
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
         
+        System.out.println("   - Authorization Header: Bearer " + accessToken.getToken().substring(0, Math.min(20, accessToken.getToken().length())) + "...");
+
         int code = conn.getResponseCode();
+        System.out.println("   - HTTP Response Code: " + code);
+        
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(
                         code == 200 ? conn.getInputStream() : conn.getErrorStream(),
@@ -52,10 +62,16 @@ public class ApiClientFX {
                 response.append(responseLine.trim());
             }
             
+            String responseStr = response.toString();
+            System.out.println("   - Response Length: " + responseStr.length());
+            System.out.println("   - Response Preview: " + responseStr.substring(0, Math.min(200, responseStr.length())) + "...");
+            
             if (code == 200) {
-                return response.toString();
+                System.out.println("✅ Haberler başarıyla alındı");
+                return responseStr;
             } else {
-                throw new IOException("Haberler alınamadı: " + code + " - " + response.toString());
+                System.err.println("❌ Haber alma hatası: " + code + " - " + responseStr);
+                throw new IOException("Haberler alınamadı: " + code + " - " + responseStr);
             }
         }
     }

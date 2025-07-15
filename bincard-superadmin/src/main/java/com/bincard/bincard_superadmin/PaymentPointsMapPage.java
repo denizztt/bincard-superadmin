@@ -43,23 +43,8 @@ public class PaymentPointsMapPage {
 
             List<PaymentPointsTablePage.PaymentPoint> pointsToShow;
             if (paymentPoints == null || paymentPoints.isEmpty()) {
-                System.out.println("[DEBUG] Haritada gösterilecek veri yok. Statik örnek markerlar eklenecek.");
+                System.out.println("[DEBUG] Haritada gösterilecek veri yok. Marker eklenmeyecek.");
                 pointsToShow = new java.util.ArrayList<>();
-                pointsToShow.add(new PaymentPointsTablePage.PaymentPoint(
-                    1L, "Test Noktası - İstanbul", "Taksim Meydanı", "Beyoğlu", "İstanbul", "34000",
-                    "+90 212 000 00 00", "09:00-18:00", java.util.Arrays.asList("CASH", "CREDIT_CARD"),
-                    "Test açıklama", true, java.time.LocalDateTime.now(), java.time.LocalDateTime.now(), null, 41.0369, 28.9850, new java.util.ArrayList<>()
-                ));
-                pointsToShow.add(new PaymentPointsTablePage.PaymentPoint(
-                    2L, "Test Noktası - Ankara", "Kızılay", "Çankaya", "Ankara", "06000",
-                    "+90 312 000 00 00", "08:00-17:00", java.util.Arrays.asList("CASH"),
-                    "Test açıklama 2", true, java.time.LocalDateTime.now(), java.time.LocalDateTime.now(), null, 39.9208, 32.8541, new java.util.ArrayList<>()
-                ));
-                pointsToShow.add(new PaymentPointsTablePage.PaymentPoint(
-                    3L, "Test Noktası - İzmir", "Konak Meydanı", "Konak", "İzmir", "35000",
-                    "+90 232 000 00 00", "10:00-19:00", java.util.Arrays.asList("CREDIT_CARD"),
-                    "Test açıklama 3", true, java.time.LocalDateTime.now(), java.time.LocalDateTime.now(), null, 38.4192, 27.1287, new java.util.ArrayList<>()
-                ));
             } else {
                 System.out.println("[DEBUG] Haritada gösterilecek ödeme noktası sayısı: " + paymentPoints.size());
                 pointsToShow = paymentPoints;
@@ -81,7 +66,7 @@ public class PaymentPointsMapPage {
                         address.replace("'", " "),
                         description.replace("'", " ")
                     );
-                    markersJs.append(String.format(
+                    markersJs.append(String.format(java.util.Locale.US,
                         "L.marker([%f, %f]).addTo(map).bindPopup('%s');\n",
                         point.getLatitude(), point.getLongitude(), popupHtml
                     ));
@@ -233,7 +218,7 @@ public class PaymentPointsMapPage {
                         address.replace("'", " "),
                         description.replace("'", " ")
                     );
-                    markersJs.append(String.format(
+                    markersJs.append(String.format(java.util.Locale.US,
                         "L.marker([%f, %f]).addTo(map).bindPopup('%s');\n",
                         point.getLatitude(), point.getLongitude(), popupHtml
                     ));

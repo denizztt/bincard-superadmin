@@ -68,6 +68,9 @@ public class NewsPage extends SuperadminPageBase {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
+        // Default constructor
+        public News() {}
+
         public News(Long id, String title, String content, String image, 
                    LocalDateTime startDate, LocalDateTime endDate, boolean active, 
                    String platform, String priority, String type, int viewCount, 
@@ -90,6 +93,7 @@ public class NewsPage extends SuperadminPageBase {
             this.updatedAt = updatedAt;
         }
 
+        // Getters
         public Long getId() { return id; }
         public String getTitle() { return title; }
         public String getContent() { return content; }
@@ -118,6 +122,23 @@ public class NewsPage extends SuperadminPageBase {
         public String getUpdatedAtString() {
             return updatedAt != null ? updatedAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "";
         }
+
+        // Setters
+        public void setId(Long id) { this.id = id; }
+        public void setTitle(String title) { this.title = title; }
+        public void setContent(String content) { this.content = content; }
+        public void setImage(String image) { this.image = image; }
+        public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
+        public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
+        public void setActive(boolean active) { this.active = active; }
+        public void setPlatform(String platform) { this.platform = platform; }
+        public void setPriority(String priority) { this.priority = priority; }
+        public void setType(String type) { this.type = type; }
+        public void setViewCount(int viewCount) { this.viewCount = viewCount; }
+        public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
+        public void setAllowFeedback(boolean allowFeedback) { this.allowFeedback = allowFeedback; }
+        public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+        public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
         
         // JSON yanıtından News nesnesi oluşturmak için factory metodu
         public static News fromJson(String jsonObject) {
@@ -508,104 +529,297 @@ public class NewsPage extends SuperadminPageBase {
     }
 
     private void loadNewsData() {
-        // Örnek veri (gerçek uygulamada API'den gelecek)
-        // API entegrasyonu yapılana kadar örnek verilerle çalışacak
+        System.out.println("🔄 loadNewsData başlatıldı");
+        
         if (newsList == null) {
             newsList = new ArrayList<>();
         }
         newsList.clear();
         
+        // Platform seçimi
+        String selectedPlatform = platformFilter.getValue();
+        String platform = "Tümü".equals(selectedPlatform) ? null : selectedPlatform;
+        System.out.println("   - Seçilen Platform: " + selectedPlatform);
+        
+        // Token kontrolü
+        if (accessToken == null) {
+            System.err.println("❌ Access token bulunamadı");
+            showAlert("Hata", "Oturum bulunamadı. Lütfen tekrar giriş yapın.");
+            return;
+        }
+        System.out.println("   - Token: ✅ Mevcut");
+        
         try {
-            // API'den haberleri çek
-            String selectedPlatform = platformFilter.getValue();
-            String platform = "Tümü".equals(selectedPlatform) ? null : selectedPlatform;
-            
-            // Status bilgisi güncelle
-            System.out.println("Haberler yükleniyor...");
-            
+            System.out.println("   - API çağrısı başlatılıyor...");
             String response = ApiClientFX.getAllNews(accessToken, platform);
-            System.out.println("API Yanıtı: " + response);
             
-            // API yanıtının formatını tespit etmek için detaylı log ekle
-            if (response != null) {
-                System.out.println("API yanıtı uzunluğu: " + response.length());
-                System.out.println("API yanıtı ilk 10 karakter: " + response.substring(0, Math.min(10, response.length())));
-                System.out.println("API yanıtı son 10 karakter: " + response.substring(Math.max(0, response.length() - 10)));
-                System.out.println("data alanı içeriyor mu: " + response.contains("\"data\""));
-                System.out.println("Dizi olarak başlıyor mu: " + response.trim().startsWith("["));
-                System.out.println("Dizi olarak bitiyor mu: " + response.trim().endsWith("]"));
+            if (response == null || response.isEmpty()) {
+                System.err.println("❌ API yanıtı boş veya null");
+                createSampleNews();
+                return;
             }
             
-            // JSON yanıtını işle
-            if (response != null && !response.isEmpty()) {
-                // API artık doğrudan JSON dizisi döndürebilir veya "data" alanında gönderebilir
-                String dataArray;
-                
-                // Önce "data" alanını kontrol et
-                int dataStart = response.indexOf("\"data\":[");
-                if (dataStart != -1) {
-                    // "data" alanı bulundu, içerisindeki diziyi çıkar
-                    dataStart += 8; // "data":[ uzunluğu
-                    int dataEnd = response.lastIndexOf("]");
-                    if (dataEnd > dataStart) {
-                        dataArray = response.substring(dataStart, dataEnd);
-                    } else {
-                        System.err.println("JSON veri dizisi bulunamadı veya hatalı format");
-                        return;
-                    }
-                } else if (response.trim().startsWith("[") && response.trim().endsWith("]")) {
-                    // Doğrudan dizi döndürülmüş
-                    dataArray = response.substring(1, response.length() - 1);
-                } else {
-                    System.err.println("Tanınmayan JSON formatı, ne 'data' alanı ne de dizi formatında");
-                    return;
-                }
-                
-                // Her bir haber nesnesini işle
-                int startIndex = 0;
-                int braceCount = 0;
-                
-                for (int i = 0; i < dataArray.length(); i++) {
-                    char c = dataArray.charAt(i);
-                    
-                    if (c == '{') {
-                        if (braceCount == 0) {
-                            startIndex = i;
-                        }
-                        braceCount++;
-                    } else if (c == '}') {
-                        braceCount--;
-                        if (braceCount == 0) {
-                            // Bir nesne tamamlandı
-                            String jsonObject = dataArray.substring(startIndex, i + 1);
-                            News news = News.fromJson(jsonObject);
-                            if (news != null) {
-                                newsList.add(news);
-                            }
-                        }
-                    }
-                }
-            } else {
-                System.err.println("API yanıtı boş veya null");
-            }
+            System.out.println("✅ API Response alındı: " + response.length() + " karakter");
+            System.out.println("   - Response preview: " + response.substring(0, Math.min(300, response.length())) + "...");
             
-            // Tabloya ekle
-            newsTable.getItems().clear();
-            newsTable.getItems().addAll(newsList);            } catch (Exception e) {
-            System.err.println("Haberler API'si mevcut değil veya hata oluştu: " + e.getMessage());
-            e.printStackTrace();
+            // Manuel JSON parsing
+            parseNewsFromJson(response);
             
-            // Hata durumunda sessizce örnek verilerle devam et
-            System.out.println("API'den veri alınamadı, örnek verilerle devam ediliyor...");
+            System.out.println("✅ Toplam " + newsList.size() + " haber parse edildi");
             
-            // Eğer boş dizi dönerse veya hata alınırsa haber listesini temizle
-            newsList.clear();
-            createSampleNews();
-            
-            // Tabloya örnek verileri ekle
+            // UI güncelleme
             newsTable.getItems().clear();
             newsTable.getItems().addAll(newsList);
+            System.out.println("✅ TableView güncellendi: " + newsTable.getItems().size() + " item");
+            
+        } catch (Exception e) {
+            System.err.println("❌ loadNewsData genel hatası: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Hata durumunda örnek verilerle devam et
+            System.out.println("   - Örnek verilerle devam ediliyor...");
+            createSampleNews();
         }
+    }
+    
+    // Manuel JSON parsing metodu
+    private void parseNewsFromJson(String jsonResponse) {
+        try {
+            System.out.println("📋 JSON parsing başlatılıyor...");
+            
+            // "content" array'ini bul
+            int contentStart = jsonResponse.indexOf("\"content\":[");
+            if (contentStart == -1) {
+                System.err.println("❌ 'content' array'i bulunamadı");
+                return;
+            }
+            
+            contentStart += 11; // "content":[ uzunluğu
+            int contentEnd = findMatchingBracket(jsonResponse, contentStart - 1);
+            if (contentEnd == -1) {
+                System.err.println("❌ Content array'inin sonu bulunamadı");
+                return;
+            }
+            
+            String contentArray = jsonResponse.substring(contentStart, contentEnd);
+            System.out.println("📋 Content array bulundu: " + contentArray.length() + " karakter");
+            
+            // Array içindeki her bir objeyi parse et
+            parseNewsObjects(contentArray);
+            
+        } catch (Exception e) {
+            System.err.println("❌ JSON parsing hatası: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    // News objelerini parse et
+    private void parseNewsObjects(String contentArray) {
+        int braceCount = 0;
+        int startIndex = 0;
+        boolean inString = false;
+        char prevChar = ' ';
+        
+        for (int i = 0; i < contentArray.length(); i++) {
+            char c = contentArray.charAt(i);
+            
+            // String içindeyken parantez sayma
+            if (c == '"' && prevChar != '\\') {
+                inString = !inString;
+            }
+            
+            if (!inString) {
+                if (c == '{') {
+                    if (braceCount == 0) {
+                        startIndex = i;
+                    }
+                    braceCount++;
+                } else if (c == '}') {
+                    braceCount--;
+                    if (braceCount == 0) {
+                        // Bir obje tamamlandı
+                        String newsJson = contentArray.substring(startIndex, i + 1);
+                        News news = parseNewsObject(newsJson);
+                        if (news != null) {
+                            newsList.add(news);
+                            System.out.println("   - Haber eklendi: " + news.getTitle());
+                        }
+                    }
+                }
+            }
+            
+            prevChar = c;
+        }
+    }
+    
+    // Tek bir news objesini parse et
+    private News parseNewsObject(String jsonObject) {
+        try {
+            News news = new News();
+            
+            // Basit JSON value extraction
+            news.setId(Long.parseLong(extractJsonValue(jsonObject, "id", "0")));
+            news.setTitle(extractJsonValue(jsonObject, "title", ""));
+            news.setContent(extractJsonValue(jsonObject, "content", ""));
+            news.setType(extractJsonValue(jsonObject, "type", ""));
+            news.setPriority(extractJsonValue(jsonObject, "priority", ""));
+            news.setActive(Boolean.parseBoolean(extractJsonValue(jsonObject, "active", "true")));
+            news.setViewCount(Integer.parseInt(extractJsonValue(jsonObject, "viewCount", "0")));
+            news.setLikeCount(Integer.parseInt(extractJsonValue(jsonObject, "likeCount", "0")));
+            news.setAllowFeedback(Boolean.parseBoolean(extractJsonValue(jsonObject, "allowFeedback", "true")));
+            
+            // Nullable fields
+            String image = extractJsonValue(jsonObject, "image", null);
+            if (image != null && !image.equals("null")) {
+                news.setImage(image);
+            }
+            
+            String platform = extractJsonValue(jsonObject, "platform", null);
+            if (platform != null && !platform.equals("null")) {
+                news.setPlatform(platform);
+            }
+            
+            // Date parsing
+            String createdAtStr = extractJsonValue(jsonObject, "createdAt", null);
+            if (createdAtStr != null && !createdAtStr.equals("null")) {
+                try {
+                    news.setCreatedAt(LocalDateTime.parse(createdAtStr.replace("Z", "")));
+                } catch (Exception e) {
+                    System.err.println("⚠️ CreatedAt parse hatası: " + e.getMessage());
+                    news.setCreatedAt(LocalDateTime.now());
+                }
+            } else {
+                news.setCreatedAt(LocalDateTime.now());
+            }
+            
+            String updatedAtStr = extractJsonValue(jsonObject, "updatedAt", null);
+            if (updatedAtStr != null && !updatedAtStr.equals("null")) {
+                try {
+                    news.setUpdatedAt(LocalDateTime.parse(updatedAtStr.replace("Z", "")));
+                } catch (Exception e) {
+                    System.err.println("⚠️ UpdatedAt parse hatası: " + e.getMessage());
+                    news.setUpdatedAt(LocalDateTime.now());
+                }
+            } else {
+                news.setUpdatedAt(LocalDateTime.now());
+            }
+            
+            String startDateStr = extractJsonValue(jsonObject, "startDate", null);
+            if (startDateStr != null && !startDateStr.equals("null")) {
+                try {
+                    news.setStartDate(LocalDateTime.parse(startDateStr.replace("Z", "")));
+                } catch (Exception e) {
+                    System.err.println("⚠️ StartDate parse hatası: " + e.getMessage());
+                    news.setStartDate(LocalDateTime.now());
+                }
+            } else {
+                news.setStartDate(LocalDateTime.now());
+            }
+            
+            String endDateStr = extractJsonValue(jsonObject, "endDate", null);
+            if (endDateStr != null && !endDateStr.equals("null")) {
+                try {
+                    news.setEndDate(LocalDateTime.parse(endDateStr.replace("Z", "")));
+                } catch (Exception e) {
+                    System.err.println("⚠️ EndDate parse hatası: " + e.getMessage());
+                    news.setEndDate(LocalDateTime.now().plusDays(30));
+                }
+            } else {
+                news.setEndDate(LocalDateTime.now().plusDays(30));
+            }
+            
+            return news;
+            
+        } catch (Exception e) {
+            System.err.println("⚠️ News object parse hatası: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    // JSON'dan değer çıkarma utility
+    private String extractJsonValue(String json, String key, String defaultValue) {
+        String searchKey = "\"" + key + "\":";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) {
+            return defaultValue;
+        }
+        
+        startIndex += searchKey.length();
+        
+        // Boşlukları atla
+        while (startIndex < json.length() && Character.isWhitespace(json.charAt(startIndex))) {
+            startIndex++;
+        }
+        
+        if (startIndex >= json.length()) {
+            return defaultValue;
+        }
+        
+        char firstChar = json.charAt(startIndex);
+        
+        // String değeri
+        if (firstChar == '"') {
+            int endIndex = startIndex + 1;
+            while (endIndex < json.length()) {
+                if (json.charAt(endIndex) == '"' && json.charAt(endIndex - 1) != '\\') {
+                    return json.substring(startIndex + 1, endIndex);
+                }
+                endIndex++;
+            }
+            return defaultValue;
+        }
+        
+        // Null değeri
+        if (json.substring(startIndex).startsWith("null")) {
+            return null;
+        }
+        
+        // Sayısal veya boolean değer
+        int endIndex = startIndex;
+        while (endIndex < json.length()) {
+            char c = json.charAt(endIndex);
+            if (c == ',' || c == '}' || c == ']' || Character.isWhitespace(c)) {
+                break;
+            }
+            endIndex++;
+        }
+        
+        if (endIndex > startIndex) {
+            return json.substring(startIndex, endIndex).trim();
+        }
+        
+        return defaultValue;
+    }
+    
+    // Matching bracket bulma utility
+    private int findMatchingBracket(String text, int openIndex) {
+        int count = 1;
+        boolean inString = false;
+        char prevChar = ' ';
+        
+        for (int i = openIndex + 1; i < text.length(); i++) {
+            char c = text.charAt(i);
+            
+            if (c == '"' && prevChar != '\\') {
+                inString = !inString;
+            }
+            
+            if (!inString) {
+                if (c == '[') {
+                    count++;
+                } else if (c == ']') {
+                    count--;
+                    if (count == 0) {
+                        return i;
+                    }
+                }
+            }
+            
+            prevChar = c;
+        }
+        
+        return -1;
     }
     
     // Örnek haberler oluşturan yardımcı metod
@@ -1941,12 +2155,16 @@ public class NewsPage extends SuperadminPageBase {
         return content;
     }
 
-    private void showAlert(String message) {
+    private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Bilgi");
+        alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    
+    private void showAlert(String message) {
+        showAlert("Bilgi", message);
     }
     
     /**
