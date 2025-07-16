@@ -4,13 +4,13 @@ import com.bincard.bincard_superadmin.model.PaymentPoint;
 import com.bincard.bincard_superadmin.model.PaymentMethod;
 import com.bincard.bincard_superadmin.model.Location;
 import com.bincard.bincard_superadmin.model.Address;
-import com.bincard.bincard_superadmin.model.PaymentMethod;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Alert;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -36,7 +36,7 @@ public class PaymentPointsMapPage {
         // Şimdilik tüm ödeme noktalarını yükle ve göster
         new Thread(() -> {
             try {
-                String response = ApiClientFX.getAllPaymentPoints(accessToken, 0, 1000, "name");
+                String response = ApiClientFX.getAllPaymentPoints(accessToken);
                 List<PaymentPoint> allPoints = new ArrayList<>();
                 if (response != null && !response.isEmpty()) {
                     allPoints = parsePaymentPointsResponse(response);
@@ -44,7 +44,7 @@ public class PaymentPointsMapPage {
                 final List<PaymentPoint> finalPoints = allPoints;
                 javafx.application.Platform.runLater(() -> {
                     try {
-                        showMap(stage, finalPoints);
+                        displayMap(stage, finalPoints);
                     } catch (Exception ex) {
                         System.err.println("Harita gösterilirken hata: " + ex.getMessage());
                         ex.printStackTrace();
@@ -152,15 +152,36 @@ public class PaymentPointsMapPage {
     }
     
     private String extractStringValue(String json, String key) {
-        String pattern = "\"" + key + "\":\"";
-        int startIndex = json.indexOf(pattern);
-        if (startIndex == -1) return null;
+        // Hem string hem de numeric değerleri destekle
+        String stringPattern = "\"" + key + "\":\"";
+        String numericPattern = "\"" + key + "\":";
         
-        startIndex += pattern.length();
-        int endIndex = json.indexOf("\"", startIndex);
-        if (endIndex == -1) return null;
-        
-        return json.substring(startIndex, endIndex);
+        int startIndex = json.indexOf(stringPattern);
+        if (startIndex != -1) {
+            // String değer
+            startIndex += stringPattern.length();
+            int endIndex = json.indexOf("\"", startIndex);
+            if (endIndex != -1) {
+                return json.substring(startIndex, endIndex);
+            }
+        } else {
+            // Numeric değer
+            startIndex = json.indexOf(numericPattern);
+            if (startIndex != -1) {
+                startIndex += numericPattern.length();
+                int endIndex = startIndex;
+                while (endIndex < json.length() && 
+                       (Character.isDigit(json.charAt(endIndex)) || 
+                        json.charAt(endIndex) == '.' || 
+                        json.charAt(endIndex) == '-')) {
+                    endIndex++;
+                }
+                if (endIndex > startIndex) {
+                    return json.substring(startIndex, endIndex);
+                }
+            }
+        }
+        return null;
     }
     
     private Location parseLocation(String objStr) {
@@ -376,6 +397,114 @@ public class PaymentPointsMapPage {
             }
         });
     }
+    
+    private void displayMap(Stage owner, List<PaymentPoint> allPoints) {
+        // Geçerli koordinatları olan noktaları filtrele
+        List<PaymentPoint> validPoints = new ArrayList<>();
+        for (PaymentPoint point : allPoints) {
+            if (point.getLocation() != null && 
+                point.getLocation().getLatitude() != 0.0 && 
+                point.getLocation().getLongitude() != 0.0) {
+                validPoints.add(point);
+                System.out.println("Geçerli nokta: " + point.getName() + " - " + 
+                    point.getLocation().getLatitude() + ", " + point.getLocation().getLongitude());
+            }
+        }
+        
+        System.out.println("Toplam " + allPoints.size() + " nokta, " + validPoints.size() + " geçerli nokta");
+        
+        if (validPoints.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Uyarı");
+            alert.setHeaderText("Harita Gösterilemiyor");
+            alert.setContentText("Geçerli koordinatları olan ödeme noktası bulunamadı.");
+            alert.showAndWait();
+            return;
+        }
+        
+        // WebView ile harita göster
+        Stage mapStage = new Stage();
+        mapStage.initOwner(owner);
+        mapStage.initModality(Modality.APPLICATION_MODAL);
+        mapStage.setTitle("Ödeme Noktaları Haritası (" + validPoints.size() + " nokta)");
+        mapStage.setWidth(1000);
+        mapStage.setHeight(700);
+
+        BorderPane root = new BorderPane();
+        WebView webView = new WebView();
+        WebEngine webEngine = webView.getEngine();
+        
+        // HTML içeriğini oluştur
+        StringBuilder markersJs = new StringBuilder();
+        for (PaymentPoint point : validPoints) {
+            String address = "";
+            if (point.getAddress() != null) {
+                address = String.format("%s, %s, %s",
+                    point.getAddress().getStreet() != null ? point.getAddress().getStreet() : "",
+                    point.getAddress().getDistrict() != null ? point.getAddress().getDistrict() : "",
+                    point.getAddress().getCity() != null ? point.getAddress().getCity() : "");
+            }
+            
+            String status = point.isActive() ? "Aktif" : "Pasif";
+            String statusColor = point.isActive() ? "green" : "red";
+            
+            String popupHtml = String.format(
+                "<b>%s</b><br/><span style='font-size:12px;'>%s</span><br/><span style='color:%s;'>%s</span>",
+                escapeHtml(point.getName()),
+                escapeHtml(address),
+                statusColor,
+                status
+            );
+            
+            markersJs.append(String.format(Locale.US,
+                "L.marker([%f, %f]).addTo(map).bindPopup('%s');\n",
+                point.getLocation().getLatitude(), 
+                point.getLocation().getLongitude(), 
+                escapeHtml(popupHtml)
+            ));
+        }
+        
+        String html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'/>
+            <title>Ödeme Noktaları Harita</title>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'/>
+            <style> 
+                #map { width: 100vw; height: 100vh; } 
+                body { margin:0; font-family: Arial, sans-serif; }
+                .info { position: absolute; top: 10px; left: 10px; background: white; padding: 10px; z-index: 1000; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+            </style>
+        </head>
+        <body>
+            <div class='info'>Toplam %d ödeme noktası</div>
+            <div id='map'></div>
+            <script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>
+            <script>
+                var map = L.map('map').setView([39.0, 35.0], 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
+                %s
+            </script>
+        </body>
+        </html>
+        """.formatted(validPoints.size(), markersJs.toString());
+
+        System.out.println("HTML içeriği hazırlandı, WebView'e yükleniyor...");
+        
+        webEngine.loadContent(html);
+        root.setCenter(webView);
+        mapStage.setScene(new Scene(root));
+        mapStage.showAndWait();
+    }
+    
+    // ...existing code...
+    
+    // ...existing code...
     
     private static void createMapWindow(Stage owner, List<PaymentPoint> paymentPoints) {
         try {

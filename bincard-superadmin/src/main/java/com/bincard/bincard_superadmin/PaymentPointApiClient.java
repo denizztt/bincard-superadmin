@@ -309,9 +309,31 @@ public class PaymentPointApiClient {
         // JSON body oluştur
         String jsonBody = createPaymentPointUpdateJson(paymentPointData);
         
+        System.out.println("\n🔧 YENİ ÖDEME NOKTASI OLUŞTURMA:");
+        System.out.println("   📍 Endpoint: " + endpoint);
+        System.out.println("   🎯 JSON Body: " + jsonBody);
+        System.out.println("   🔑 Token: " + accessToken.getToken().substring(0, 20) + "...");
+        
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = jsonBody.getBytes("utf-8");
             os.write(input, 0, input.length);
+        }
+
+        // Response kodunu kontrol et
+        int responseCode = conn.getResponseCode();
+        System.out.println("   📊 Response Code: " + responseCode);
+        
+        if (responseCode >= 400) {
+            // Error response'u oku
+            BufferedReader errorReader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "utf-8"));
+            StringBuilder errorResponse = new StringBuilder();
+            String line;
+            while ((line = errorReader.readLine()) != null) {
+                errorResponse.append(line);
+            }
+            errorReader.close();
+            System.err.println("   ❌ Error Response: " + errorResponse.toString());
+            throw new IOException("HTTP " + responseCode + ": " + errorResponse.toString());
         }
 
         return executeRequest(conn, "Ödeme noktası eklenemedi");
@@ -321,16 +343,20 @@ public class PaymentPointApiClient {
      * PaymentPointUpdateDTO'dan JSON string oluşturur
      */
     private static String createPaymentPointUpdateJson(PaymentPointUpdateDTO data) {
+        System.out.println("🔨 JSON OLUŞTURULMAYA BAŞLANIYOR...");
+        
         StringBuilder json = new StringBuilder();
         json.append("{");
         
         // Name
-        if (data.getName() != null) {
+        if (data.getName() != null && !data.getName().trim().isEmpty()) {
             json.append("\"name\":\"").append(escapeJsonString(data.getName())).append("\",");
+            System.out.println("   - Name eklendi: " + data.getName());
         }
         
         // Location
         if (data.getLocation() != null) {
+            System.out.println("   - Location var, latitude: " + data.getLocation().getLatitude() + ", longitude: " + data.getLocation().getLongitude());
             json.append("\"location\":{");
             if (data.getLocation().getLatitude() != null) {
                 json.append("\"latitude\":").append(data.getLocation().getLatitude()).append(",");
@@ -343,21 +369,24 @@ public class PaymentPointApiClient {
                 json.deleteCharAt(json.length() - 1);
             }
             json.append("},");
+        } else {
+            System.out.println("   - Location null");
         }
         
         // Address
         if (data.getAddress() != null) {
+            System.out.println("   - Address var: " + data.getAddress().getStreet() + ", " + data.getAddress().getCity());
             json.append("\"address\":{");
-            if (data.getAddress().getStreet() != null) {
+            if (data.getAddress().getStreet() != null && !data.getAddress().getStreet().trim().isEmpty()) {
                 json.append("\"street\":\"").append(escapeJsonString(data.getAddress().getStreet())).append("\",");
             }
-            if (data.getAddress().getDistrict() != null) {
+            if (data.getAddress().getDistrict() != null && !data.getAddress().getDistrict().trim().isEmpty()) {
                 json.append("\"district\":\"").append(escapeJsonString(data.getAddress().getDistrict())).append("\",");
             }
-            if (data.getAddress().getCity() != null) {
+            if (data.getAddress().getCity() != null && !data.getAddress().getCity().trim().isEmpty()) {
                 json.append("\"city\":\"").append(escapeJsonString(data.getAddress().getCity())).append("\",");
             }
-            if (data.getAddress().getPostalCode() != null) {
+            if (data.getAddress().getPostalCode() != null && !data.getAddress().getPostalCode().trim().isEmpty()) {
                 json.append("\"postalCode\":\"").append(escapeJsonString(data.getAddress().getPostalCode())).append("\",");
             }
             // Son virgülü kaldır
@@ -365,16 +394,20 @@ public class PaymentPointApiClient {
                 json.deleteCharAt(json.length() - 1);
             }
             json.append("},");
+        } else {
+            System.out.println("   - Address null");
         }
         
         // Contact Number
-        if (data.getContactNumber() != null) {
+        if (data.getContactNumber() != null && !data.getContactNumber().trim().isEmpty()) {
             json.append("\"contactNumber\":\"").append(escapeJsonString(data.getContactNumber())).append("\",");
+            System.out.println("   - Contact Number eklendi: " + data.getContactNumber());
         }
         
         // Working Hours
-        if (data.getWorkingHours() != null) {
+        if (data.getWorkingHours() != null && !data.getWorkingHours().trim().isEmpty()) {
             json.append("\"workingHours\":\"").append(escapeJsonString(data.getWorkingHours())).append("\",");
+            System.out.println("   - Working Hours eklendi: " + data.getWorkingHours());
         }
         
         // Payment Methods
@@ -385,18 +418,24 @@ public class PaymentPointApiClient {
                 json.append("\"").append(data.getPaymentMethods().get(i)).append("\"");
             }
             json.append("],");
+            System.out.println("   - Payment Methods eklendi: " + data.getPaymentMethods());
         }
         
         // Description
-        if (data.getDescription() != null) {
+        if (data.getDescription() != null && !data.getDescription().trim().isEmpty()) {
             json.append("\"description\":\"").append(escapeJsonString(data.getDescription())).append("\",");
+            System.out.println("   - Description eklendi: " + data.getDescription());
         }
         
         // Active
         json.append("\"active\":").append(data.isActive());
+        System.out.println("   - Active eklendi: " + data.isActive());
         
         json.append("}");
-        return json.toString();
+        
+        String result = json.toString();
+        System.out.println("🔨 JSON OLUŞTURULDU: " + result);
+        return result;
     }
 
     /**

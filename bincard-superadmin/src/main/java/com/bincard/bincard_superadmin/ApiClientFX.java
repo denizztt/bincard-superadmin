@@ -21,6 +21,23 @@ public class ApiClientFX {
     // UTILITY METHODS
     // =================================================================
     
+    /**
+     * JSON stringlerini escape eder
+     */
+    private static String escapeJsonString(String input) {
+        if (input == null) {
+            return null;
+        }
+        
+        return input.replace("\\", "\\\\")
+                   .replace("\"", "\\\"")
+                   .replace("\b", "\\b")
+                   .replace("\f", "\\f")
+                   .replace("\n", "\\n")
+                   .replace("\r", "\\r")
+                   .replace("\t", "\\t");
+    }
+    
     // Haber API Metotları
     
     public static String getAllNews(TokenDTO accessToken, String platform) throws IOException {
@@ -987,7 +1004,6 @@ public class ApiClientFX {
         }
         
         try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
-
             StringBuilder response = new StringBuilder();
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
@@ -999,29 +1015,30 @@ public class ApiClientFX {
             System.out.println("   - Response Preview: " + responseStr.substring(0, Math.min(200, responseStr.length())) + "...");
             
             if (code == 200) {
-                System.out.println("✅ Tarih aralığındaki haberler başarıyla alındı");
+                System.out.println("✅ Haberler başarıyla alındı");
                 return responseStr;
             } else {
-                System.err.println("❌ Tarih aralığındaki haberler alma hatası: " + code + " - " + responseStr);
-                throw new IOException("Tarih aralığındaki haberler alınamadı: " + code + " - " + responseStr);
+                System.err.println("❌ Haber alma hatası: " + code + " - " + responseStr);
+                throw new IOException("Haberler alınamadı: " + code + " - " + responseStr);
             }
         }
     }
     
     // =================================================================
-    // PAYMENT POINT API METHODS
+    // ÖDEME NOKTASI API METOTLARI
     // =================================================================
     
     /**
-     * Tüm ödeme noktalarını getirir
+     * Tüm ödeme noktalarını listeler
+     * GET /v1/api/payment-point
      */
-    public static String getAllPaymentPoints(TokenDTO accessToken, int page, int size, String sort) throws IOException {
+    public static String getAllPaymentPoints(TokenDTO accessToken) throws IOException {
         System.out.println("💳 getAllPaymentPoints çağrıldı");
-        System.out.println("   - Page: " + page + ", Size: " + size + ", Sort: " + sort);
         
-        String endpoint = BASE_URL + "/payment-point?page=" + page + "&size=" + size + "&sort=" + sort;
+        String endpoint = BASE_URL + "/payment-point";
         System.out.println("   - API Endpoint: " + endpoint);
         
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
         URL url;
         try {
             url = new URI(endpoint).toURL();
@@ -1032,19 +1049,21 @@ public class ApiClientFX {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Content-Type", "application/json");
-        if (accessToken != null) {
-            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
-        }
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
         
+        System.out.println("   - Authorization Header: Bearer " + accessToken.getToken().substring(0, Math.min(20, accessToken.getToken().length())) + "...");
+
         int code = conn.getResponseCode();
         System.out.println("   - HTTP Response Code: " + code);
         
+        // Güvenli stream alma
         InputStream responseStream;
         if (code == 200) {
             responseStream = conn.getInputStream();
         } else {
             responseStream = conn.getErrorStream();
             if (responseStream == null) {
+                // Error stream null ise, response message'ı al
                 String errorMsg = conn.getResponseMessage();
                 System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
                 throw new IOException("API Hatası: " + code + " - " + errorMsg);
@@ -1060,6 +1079,7 @@ public class ApiClientFX {
             
             String responseStr = response.toString();
             System.out.println("   - Response Length: " + responseStr.length());
+            System.out.println("   - Response Preview: " + responseStr.substring(0, Math.min(200, responseStr.length())) + "...");
             
             if (code == 200) {
                 System.out.println("✅ Ödeme noktaları başarıyla alındı");
@@ -1072,164 +1092,136 @@ public class ApiClientFX {
     }
     
     /**
-     * ID'ye göre ödeme noktası getirir
-     */
-    public static String getPaymentPointById(TokenDTO accessToken, Long id) throws IOException {
-        System.out.println("💳 getPaymentPointById çağrıldı - ID: " + id);
-        
-        String endpoint = BASE_URL + "/payment-point/" + id;
-        System.out.println("   - API Endpoint: " + endpoint);
-        
-        URL url;
-        try {
-            url = new URI(endpoint).toURL();
-        } catch (URISyntaxException e) {
-            throw new IOException("Invalid URL: " + e.getMessage(), e);
-        }
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-Type", "application/json");
-        if (accessToken != null) {
-            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
-        }
-        
-        int code = conn.getResponseCode();
-        System.out.println("   - HTTP Response Code: " + code);
-        
-        InputStream responseStream;
-        if (code == 200) {
-            responseStream = conn.getInputStream();
-        } else {
-            responseStream = conn.getErrorStream();
-            if (responseStream == null) {
-                String errorMsg = conn.getResponseMessage();
-                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
-                throw new IOException("API Hatası: " + code + " - " + errorMsg);
-            }
-        }
-        
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
-            StringBuilder response = new StringBuilder();
-            String responseLine;
-            while ((responseLine = br.readLine()) != null) {
-                response.append(responseLine.trim());
-            }
-            
-            String responseStr = response.toString();
-            
-            if (code == 200) {
-                System.out.println("✅ Ödeme noktası başarıyla alındı");
-                return responseStr;
-            } else {
-                System.err.println("❌ Ödeme noktası alma hatası: " + code + " - " + responseStr);
-                throw new IOException("Ödeme noktası alınamadı: " + code + " - " + responseStr);
-            }
-        }
-    }
-    
-    /**
-     * Yeni ödeme noktası oluşturur
+     * Yeni bir ödeme noktası oluşturur
+     * POST /v1/api/payment-point/create
      */
     public static String createPaymentPoint(TokenDTO accessToken, String name, Double latitude, Double longitude,
-                                          String street, String district, String city, String postalCode,
-                                          String contactNumber, String workingHours, List<String> paymentMethods,
-                                          String description, boolean active) throws IOException {
+                                           String street, String district, String city, String postalCode,
+                                           String contactNumber, String workingHours, List<String> paymentMethods,
+                                           String description, Boolean active) throws IOException {
         System.out.println("💳 createPaymentPoint çağrıldı");
         
-        String endpoint = BASE_URL + "/payment-point";
-        System.out.println("   - API Endpoint: " + endpoint);
+        String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
         
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
         URL url;
         try {
-            url = new URI(endpoint).toURL();
+            url = new URI(BASE_URL + "/payment-point/create").toURL();
         } catch (URISyntaxException e) {
             throw new IOException("Invalid URL: " + e.getMessage(), e);
         }
-
+        
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
         conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
         conn.setDoOutput(true);
         
-        // JSON payload oluştur
-        StringBuilder jsonPayload = new StringBuilder();
-        jsonPayload.append("{");
-        jsonPayload.append("\"name\":\"").append(name).append("\",");
-        jsonPayload.append("\"location\":{");
-        jsonPayload.append("\"latitude\":").append(latitude).append(",");
-        jsonPayload.append("\"longitude\":").append(longitude);
-        jsonPayload.append("},");
-        jsonPayload.append("\"address\":{");
-        jsonPayload.append("\"street\":\"").append(street != null ? street : "").append("\",");
-        jsonPayload.append("\"district\":\"").append(district != null ? district : "").append("\",");
-        jsonPayload.append("\"city\":\"").append(city != null ? city : "").append("\",");
-        jsonPayload.append("\"postalCode\":\"").append(postalCode != null ? postalCode : "").append("\"");
-        jsonPayload.append("},");
-        jsonPayload.append("\"contactNumber\":\"").append(contactNumber != null ? contactNumber : "").append("\",");
-        jsonPayload.append("\"workingHours\":\"").append(workingHours != null ? workingHours : "").append("\",");
-        jsonPayload.append("\"paymentMethods\":[");
-        if (paymentMethods != null) {
-            for (int i = 0; i < paymentMethods.size(); i++) {
-                jsonPayload.append("\"").append(paymentMethods.get(i)).append("\"");
-                if (i < paymentMethods.size() - 1) {
-                    jsonPayload.append(",");
-                }
-            }
-        }
-        jsonPayload.append("},");
-        jsonPayload.append("\"description\":\"").append(description != null ? description : "").append("\",");
-        jsonPayload.append("\"active\":").append(active);
-        jsonPayload.append("}");
-        
-        System.out.println("   - JSON Payload: " + jsonPayload.toString());
-        
         try (OutputStream os = conn.getOutputStream()) {
-            os.write(jsonPayload.toString().getBytes("UTF-8"));
+            // Name
+            writeFormField(os, boundary, "name", name);
+            
+            // Location
+            if (latitude != null && longitude != null) {
+                writeFormField(os, boundary, "latitude", latitude.toString());
+                writeFormField(os, boundary, "longitude", longitude.toString());
+            }
+            
+            // Address
+            if (street != null || district != null || city != null || postalCode != null) {
+                // JSON nesnesi olarak ekle
+                StringBuilder addressJson = new StringBuilder();
+                addressJson.append("{");
+                
+                if (street != null) {
+                    addressJson.append("\"street\":\"").append(escapeJsonString(street)).append("\"");
+                }
+                if (district != null) {
+                    if (addressJson.length() > 1) addressJson.append(",");
+                    addressJson.append("\"district\":\"").append(escapeJsonString(district)).append("\"");
+                }
+                if (city != null) {
+                    if (addressJson.length() > 1) addressJson.append(",");
+                    addressJson.append("\"city\":\"").append(escapeJsonString(city)).append("\"");
+                }
+                if (postalCode != null) {
+                    if (addressJson.length() > 1) addressJson.append(",");
+                    addressJson.append("\"postalCode\":\"").append(escapeJsonString(postalCode)).append("\"");
+                }
+                
+                addressJson.append("}");
+                
+                // Form alanı olarak ekle
+                writeFormField(os, boundary, "address", addressJson.toString());
+            }
+            
+            // İletişim bilgileri
+            if (contactNumber != null) {
+                writeFormField(os, boundary, "contactNumber", contactNumber);
+            }
+            
+            // Çalışma saatleri
+            if (workingHours != null) {
+                writeFormField(os, boundary, "workingHours", workingHours);
+            }
+            
+            // Ödeme yöntemleri
+            if (paymentMethods != null) {
+                StringBuilder paymentMethodsJson = new StringBuilder();
+                paymentMethodsJson.append("[");
+                for (int i = 0; i < paymentMethods.size(); i++) {
+                    paymentMethodsJson.append("\"").append(escapeJsonString(paymentMethods.get(i))).append("\"");
+                    if (i < paymentMethods.size() - 1) {
+                        paymentMethodsJson.append(",");
+                    }
+                }
+                paymentMethodsJson.append("]");
+                
+                writeFormField(os, boundary, "paymentMethods", paymentMethodsJson.toString());
+            }
+            
+            // Açıklama
+            if (description != null) {
+                writeFormField(os, boundary, "description", description);
+            }
+            
+            // Aktif/Pasif durumu
+            if (active != null) {
+                writeFormField(os, boundary, "active", active.toString());
+            }
+            
+            // Form sonlandırma
+            os.write(("\r\n--" + boundary + "--\r\n").getBytes("UTF-8"));
         }
         
         int code = conn.getResponseCode();
-        System.out.println("   - HTTP Response Code: " + code);
-        
-        InputStream responseStream;
-        if (code == 201) {
-            responseStream = conn.getInputStream();
-        } else {
-            responseStream = conn.getErrorStream();
-            if (responseStream == null) {
-                String errorMsg = conn.getResponseMessage();
-                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
-                throw new IOException("API Hatası: " + code + " - " + errorMsg);
-            }
-        }
-        
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        code == 200 ? conn.getInputStream() : conn.getErrorStream(),
+                        "utf-8"))) {
+
             StringBuilder response = new StringBuilder();
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
                 response.append(responseLine.trim());
             }
             
-            String responseStr = response.toString();
-            
-            if (code == 201) {
+            if (code == 200) {
                 System.out.println("✅ Ödeme noktası başarıyla oluşturuldu");
-                return responseStr;
+                return response.toString();
             } else {
-                System.err.println("❌ Ödeme noktası oluşturma hatası: " + code + " - " + responseStr);
-                throw new IOException("Ödeme noktası oluşturulamadı: " + code + " - " + responseStr);
+                throw new IOException("Ödeme noktası oluşturulamadı: " + code + " - " + response.toString());
             }
         }
     }
     
     /**
-     * Ödeme noktasını günceller
+     * Ödeme noktasını günceller (kısmi güncelleme)
      */
     public static String updatePaymentPoint(TokenDTO accessToken, Long id, String name, Double latitude, Double longitude,
                                           String street, String district, String city, String postalCode,
                                           String contactNumber, String workingHours, List<String> paymentMethods,
-                                          String description, boolean active) throws IOException {
+                                          String description, Boolean active) throws IOException {
         System.out.println("💳 updatePaymentPoint çağrıldı - ID: " + id);
         
         String endpoint = BASE_URL + "/payment-point/" + id;
@@ -1248,35 +1240,103 @@ public class ApiClientFX {
         conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
         conn.setDoOutput(true);
         
-        // JSON payload oluştur
+        // JSON payload oluştur - sadece null olmayan alanları ekle
         StringBuilder jsonPayload = new StringBuilder();
         jsonPayload.append("{");
-        jsonPayload.append("\"name\":\"").append(name).append("\",");
-        jsonPayload.append("\"location\":{");
-        jsonPayload.append("\"latitude\":").append(latitude).append(",");
-        jsonPayload.append("\"longitude\":").append(longitude);
-        jsonPayload.append("},");
-        jsonPayload.append("\"address\":{");
-        jsonPayload.append("\"street\":\"").append(street != null ? street : "").append("\",");
-        jsonPayload.append("\"district\":\"").append(district != null ? district : "").append("\",");
-        jsonPayload.append("\"city\":\"").append(city != null ? city : "").append("\",");
-        jsonPayload.append("\"postalCode\":\"").append(postalCode != null ? postalCode : "").append("\"");
-        jsonPayload.append("},");
-        jsonPayload.append("\"contactNumber\":\"").append(contactNumber != null ? contactNumber : "").append("\",");
-        jsonPayload.append("\"workingHours\":\"").append(workingHours != null ? workingHours : "").append("\",");
-        jsonPayload.append("\"paymentMethods\":[");
+        
+        boolean hasField = false;
+        
+        // Name
+        if (name != null) {
+            jsonPayload.append("\"name\":\"").append(escapeJsonString(name)).append("\"");
+            hasField = true;
+        }
+        
+        // Location
+        if (latitude != null && longitude != null) {
+            if (hasField) jsonPayload.append(",");
+            jsonPayload.append("\"location\":{");
+            jsonPayload.append("\"latitude\":").append(latitude).append(",");
+            jsonPayload.append("\"longitude\":").append(longitude);
+            jsonPayload.append("}");
+            hasField = true;
+        }
+        
+        // Address
+        if (street != null || district != null || city != null || postalCode != null) {
+            if (hasField) jsonPayload.append(",");
+            jsonPayload.append("\"address\":{");
+            boolean hasAddressField = false;
+            
+            if (street != null) {
+                jsonPayload.append("\"street\":\"").append(escapeJsonString(street)).append("\"");
+                hasAddressField = true;
+            }
+            if (district != null) {
+                if (hasAddressField) jsonPayload.append(",");
+                jsonPayload.append("\"district\":\"").append(escapeJsonString(district)).append("\"");
+                hasAddressField = true;
+            }
+            if (city != null) {
+                if (hasAddressField) jsonPayload.append(",");
+                jsonPayload.append("\"city\":\"").append(escapeJsonString(city)).append("\"");
+                hasAddressField = true;
+            }
+            if (postalCode != null) {
+                if (hasAddressField) jsonPayload.append(",");
+                jsonPayload.append("\"postalCode\":\"").append(escapeJsonString(postalCode)).append("\"");
+                hasAddressField = true;
+            }
+            
+            jsonPayload.append("}");
+            hasField = true;
+        }
+        
+        // Contact Number
+        if (contactNumber != null) {
+            if (hasField) jsonPayload.append(",");
+            jsonPayload.append("\"contactNumber\":\"").append(escapeJsonString(contactNumber)).append("\"");
+            hasField = true;
+        }
+        
+        // Working Hours
+        if (workingHours != null) {
+            if (hasField) jsonPayload.append(",");
+            jsonPayload.append("\"workingHours\":\"").append(escapeJsonString(workingHours)).append("\"");
+            hasField = true;
+        }
+        
+        // Payment Methods
         if (paymentMethods != null) {
+            if (hasField) jsonPayload.append(",");
+            jsonPayload.append("\"paymentMethods\":[");
             for (int i = 0; i < paymentMethods.size(); i++) {
-                jsonPayload.append("\"").append(paymentMethods.get(i)).append("\"");
+                jsonPayload.append("\"").append(escapeJsonString(paymentMethods.get(i))).append("\"");
                 if (i < paymentMethods.size() - 1) {
                     jsonPayload.append(",");
                 }
             }
+            jsonPayload.append("]");
+            hasField = true;
         }
-        jsonPayload.append("},");
-        jsonPayload.append("\"description\":\"").append(description != null ? description : "").append("\",");
-        jsonPayload.append("\"active\":").append(active);
+        
+        // Description
+        if (description != null) {
+            if (hasField) jsonPayload.append(",");
+            jsonPayload.append("\"description\":\"").append(escapeJsonString(description)).append("\"");
+            hasField = true;
+        }
+        
+        // Active
+        if (active != null) {
+            if (hasField) jsonPayload.append(",");
+            jsonPayload.append("\"active\":").append(active);
+            hasField = true;
+        }
+        
         jsonPayload.append("}");
+        
+        System.out.println("   - JSON Payload: " + jsonPayload.toString());
         
         try (OutputStream os = conn.getOutputStream()) {
             os.write(jsonPayload.toString().getBytes("UTF-8"));
@@ -1318,6 +1378,7 @@ public class ApiClientFX {
     
     /**
      * Ödeme noktasını siler
+     * DELETE /v1/api/payment-point/{id}
      */
     public static String deletePaymentPoint(TokenDTO accessToken, Long id) throws IOException {
         System.out.println("💳 deletePaymentPoint çağrıldı - ID: " + id);
@@ -1372,12 +1433,13 @@ public class ApiClientFX {
     }
     
     /**
-     * Ödeme noktasının durumunu günceller (aktif/pasif)
+     * Ödeme noktasının durumunu aktif/pasif olarak değiştirir
+     * PUT /v1/api/payment-point/{id}/status
      */
     public static String togglePaymentPointStatus(TokenDTO accessToken, Long id, boolean active) throws IOException {
         System.out.println("💳 togglePaymentPointStatus çağrıldı - ID: " + id + ", Active: " + active);
         
-        String endpoint = BASE_URL + "/payment-point/" + id + "/status?active=" + active;
+        String endpoint = BASE_URL + "/payment-point/" + id + "/status";
         System.out.println("   - API Endpoint: " + endpoint);
         
         URL url;
@@ -1388,247 +1450,17 @@ public class ApiClientFX {
         }
 
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("PATCH");
+        conn.setRequestMethod("PUT");
         conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
-        
-        int code = conn.getResponseCode();
-        System.out.println("   - HTTP Response Code: " + code);
-        
-        InputStream responseStream;
-        if (code == 200) {
-            responseStream = conn.getInputStream();
-        } else {
-            responseStream = conn.getErrorStream();
-            if (responseStream == null) {
-                String errorMsg = conn.getResponseMessage();
-                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
-                throw new IOException("API Hatası: " + code + " - " + errorMsg);
-            }
-        }
-        
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
-            StringBuilder response = new StringBuilder();
-            String responseLine;
-            while ((responseLine = br.readLine()) != null) {
-                response.append(responseLine.trim());
-            }
-            
-            String responseStr = response.toString();
-            
-            if (code == 200) {
-                System.out.println("✅ Ödeme noktası durumu başarıyla güncellendi");
-                return responseStr;
-            } else {
-                System.err.println("❌ Ödeme noktası durum güncelleme hatası: " + code + " - " + responseStr);
-                throw new IOException("Ödeme noktası durumu güncellenemedi: " + code + " - " + responseStr);
-            }
-        }
-    }
-    
-    /**
-     * Şehir bazlı ödeme noktaları getirir
-     */
-    public static String getPaymentPointsByCity(TokenDTO accessToken, String city, int page, int size) throws IOException {
-        System.out.println("💳 getPaymentPointsByCity çağrıldı - City: " + city);
-        
-        String endpoint = BASE_URL + "/payment-point/by-city/" + city + "?page=" + page + "&size=" + size;
-        System.out.println("   - API Endpoint: " + endpoint);
-        
-        URL url;
-        try {
-            url = new URI(endpoint).toURL();
-        } catch (URISyntaxException e) {
-            throw new IOException("Invalid URL: " + e.getMessage(), e);
-        }
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-Type", "application/json");
-        if (accessToken != null) {
-            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
-        }
-        
-        int code = conn.getResponseCode();
-        System.out.println("   - HTTP Response Code: " + code);
-        
-        InputStream responseStream;
-        if (code == 200) {
-            responseStream = conn.getInputStream();
-        } else {
-            responseStream = conn.getErrorStream();
-            if (responseStream == null) {
-                String errorMsg = conn.getResponseMessage();
-                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
-                throw new IOException("API Hatası: " + code + " - " + errorMsg);
-            }
-        }
-        
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
-            StringBuilder response = new StringBuilder();
-            String responseLine;
-            while ((responseLine = br.readLine()) != null) {
-                response.append(responseLine.trim());
-            }
-            
-            String responseStr = response.toString();
-            
-            if (code == 200) {
-                System.out.println("✅ Şehir bazlı ödeme noktaları başarıyla alındı");
-                return responseStr;
-            } else {
-                System.err.println("❌ Şehir bazlı ödeme noktaları alma hatası: " + code + " - " + responseStr);
-                throw new IOException("Şehir bazlı ödeme noktaları alınamadı: " + code + " - " + responseStr);
-            }
-        }
-    }
-    
-    /**
-     * Ödeme yöntemine göre ödeme noktaları getirir
-     */
-    public static String getPaymentPointsByPaymentMethod(TokenDTO accessToken, String paymentMethod, int page, int size) throws IOException {
-        System.out.println("💳 getPaymentPointsByPaymentMethod çağrıldı - Payment Method: " + paymentMethod);
-        
-        String endpoint = BASE_URL + "/payment-point/by-payment-method?paymentMethod=" + paymentMethod + "&page=" + page + "&size=" + size;
-        System.out.println("   - API Endpoint: " + endpoint);
-        
-        URL url;
-        try {
-            url = new URI(endpoint).toURL();
-        } catch (URISyntaxException e) {
-            throw new IOException("Invalid URL: " + e.getMessage(), e);
-        }
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-Type", "application/json");
-        if (accessToken != null) {
-            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
-        }
-        
-        int code = conn.getResponseCode();
-        System.out.println("   - HTTP Response Code: " + code);
-        
-        InputStream responseStream;
-        if (code == 200) {
-            responseStream = conn.getInputStream();
-        } else {
-            responseStream = conn.getErrorStream();
-            if (responseStream == null) {
-                String errorMsg = conn.getResponseMessage();
-                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
-                throw new IOException("API Hatası: " + code + " - " + errorMsg);
-            }
-        }
-        
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
-            StringBuilder response = new StringBuilder();
-            String responseLine;
-            while ((responseLine = br.readLine()) != null) {
-                response.append(responseLine.trim());
-            }
-            
-            String responseStr = response.toString();
-            
-            if (code == 200) {
-                System.out.println("✅ Ödeme yöntemine göre ödeme noktaları başarıyla alındı");
-                return responseStr;
-            } else {
-                System.err.println("❌ Ödeme yöntemine göre ödeme noktaları alma hatası: " + code + " - " + responseStr);
-                throw new IOException("Ödeme yöntemine göre ödeme noktaları alınamadı: " + code + " - " + responseStr);
-            }
-        }
-    }
-    
-    /**
-     * Yakındaki ödeme noktalarını getirir
-     */
-    public static String getNearbyPaymentPoints(TokenDTO accessToken, double latitude, double longitude, double radiusKm, int page, int size) throws IOException {
-        System.out.println("💳 getNearbyPaymentPoints çağrıldı");
-        System.out.println("   - Latitude: " + latitude + ", Longitude: " + longitude + ", Radius: " + radiusKm + "km");
-        
-        String endpoint = BASE_URL + "/payment-point/nearby?latitude=" + latitude + "&longitude=" + longitude + 
-                         "&radiusKm=" + radiusKm + "&page=" + page + "&size=" + size;
-        System.out.println("   - API Endpoint: " + endpoint);
-        
-        URL url;
-        try {
-            url = new URI(endpoint).toURL();
-        } catch (URISyntaxException e) {
-            throw new IOException("Invalid URL: " + e.getMessage(), e);
-        }
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setRequestProperty("Content-Type", "application/json");
-        if (accessToken != null) {
-            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
-        }
-        
-        int code = conn.getResponseCode();
-        System.out.println("   - HTTP Response Code: " + code);
-        
-        InputStream responseStream;
-        if (code == 200) {
-            responseStream = conn.getInputStream();
-        } else {
-            responseStream = conn.getErrorStream();
-            if (responseStream == null) {
-                String errorMsg = conn.getResponseMessage();
-                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
-                throw new IOException("API Hatası: " + code + " - " + errorMsg);
-            }
-        }
-        
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
-            StringBuilder response = new StringBuilder();
-            String responseLine;
-            while ((responseLine = br.readLine()) != null) {
-                response.append(responseLine.trim());
-            }
-            
-            String responseStr = response.toString();
-            
-            if (code == 200) {
-                System.out.println("✅ Yakındaki ödeme noktaları başarıyla alındı");
-                return responseStr;
-            } else {
-                System.err.println("❌ Yakındaki ödeme noktaları alma hatası: " + code + " - " + responseStr);
-                throw new IOException("Yakındaki ödeme noktaları alınamadı: " + code + " - " + responseStr);
-            }
-        }
-    }
-    
-    /**
-     * Ödeme noktasına fotoğraf yükler
-     */
-    public static String uploadPaymentPointPhotos(TokenDTO accessToken, Long paymentPointId, 
-                                                 List<byte[]> imageFiles, List<String> fileNames) throws IOException {
-        System.out.println("💳 uploadPaymentPointPhotos çağrıldı - Payment Point ID: " + paymentPointId);
-        
-        String boundary = "----WebKitFormBoundary" + System.currentTimeMillis();
-        String endpoint = BASE_URL + "/payment-point/" + paymentPointId + "/photos";
-        
-        URL url;
-        try {
-            url = new URI(endpoint).toURL();
-        } catch (URISyntaxException e) {
-            throw new IOException("Invalid URL: " + e.getMessage(), e);
-        }
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
         conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
         conn.setDoOutput(true);
         
+        // JSON payload
+        String jsonPayload = "{\"active\":" + active + "}";
+        System.out.println("   - JSON Payload: " + jsonPayload);
+        
         try (OutputStream os = conn.getOutputStream()) {
-            for (int i = 0; i < imageFiles.size(); i++) {
-                writeFileField(os, boundary, "files", fileNames.get(i), imageFiles.get(i));
-            }
-            
-            // Form sonlandırma
-            os.write(("\r\n--" + boundary + "--\r\n").getBytes("UTF-8"));
+            os.write(jsonPayload.getBytes("UTF-8"));
         }
         
         int code = conn.getResponseCode();
@@ -1656,66 +1488,11 @@ public class ApiClientFX {
             String responseStr = response.toString();
             
             if (code == 200) {
-                System.out.println("✅ Fotoğraflar başarıyla yüklendi");
+                System.out.println("✅ Ödeme noktası durumu başarıyla değiştirildi");
                 return responseStr;
             } else {
-                System.err.println("❌ Fotoğraf yükleme hatası: " + code + " - " + responseStr);
-                throw new IOException("Fotoğraflar yüklenemedi: " + code + " - " + responseStr);
-            }
-        }
-    }
-    
-    /**
-     * Ödeme noktasından fotoğraf siler
-     */
-    public static String deletePaymentPointPhoto(TokenDTO accessToken, Long paymentPointId, Long photoId) throws IOException {
-        System.out.println("💳 deletePaymentPointPhoto çağrıldı - Payment Point ID: " + paymentPointId + ", Photo ID: " + photoId);
-        
-        String endpoint = BASE_URL + "/payment-point/" + paymentPointId + "/photos/" + photoId;
-        System.out.println("   - API Endpoint: " + endpoint);
-        
-        URL url;
-        try {
-            url = new URI(endpoint).toURL();
-        } catch (URISyntaxException e) {
-            throw new IOException("Invalid URL: " + e.getMessage(), e);
-        }
-
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("DELETE");
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
-        
-        int code = conn.getResponseCode();
-        System.out.println("   - HTTP Response Code: " + code);
-        
-        InputStream responseStream;
-        if (code == 200) {
-            responseStream = conn.getInputStream();
-        } else {
-            responseStream = conn.getErrorStream();
-            if (responseStream == null) {
-                String errorMsg = conn.getResponseMessage();
-                System.err.println("❌ API Hatası: " + code + " - " + errorMsg);
-                throw new IOException("API Hatası: " + code + " - " + errorMsg);
-            }
-        }
-        
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
-            StringBuilder response = new StringBuilder();
-            String responseLine;
-            while ((responseLine = br.readLine()) != null) {
-                response.append(responseLine.trim());
-            }
-            
-            String responseStr = response.toString();
-            
-            if (code == 200) {
-                System.out.println("✅ Fotoğraf başarıyla silindi");
-                return responseStr;
-            } else {
-                System.err.println("❌ Fotoğraf silme hatası: " + code + " - " + responseStr);
-                throw new IOException("Fotoğraf silinemedi: " + code + " - " + responseStr);
+                System.err.println("❌ Ödeme noktası durum değişikliği hatası: " + code + " - " + responseStr);
+                throw new IOException("Ödeme noktası durumu değiştirilemedi: " + code + " - " + responseStr);
             }
         }
     }

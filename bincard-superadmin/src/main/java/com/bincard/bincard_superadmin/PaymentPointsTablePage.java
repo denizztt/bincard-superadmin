@@ -68,8 +68,8 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         totalElements = 0;
         totalPages = 0;
         
-        // API'den veri yüklemeye çalış
-        loadPaymentPointsData();
+        // API'den veri yükleme işlemi createContent() içinde yapılacak
+        // çünkü filterler henüz oluşturulmadı
         
         System.out.println("PaymentPointsTablePage constructor tamamlandı.");
     }
@@ -100,6 +100,9 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         
         // Tablo verileri güncelle
         updateTableData();
+        
+        // UI oluşturulduktan sonra veri yükle ve filtreleme uygula
+        loadPaymentPointsData();
         
         return new ScrollPane(mainContent);
     }
@@ -168,14 +171,14 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         
         statusFilter = new ComboBox<>();
         statusFilter.getItems().addAll("Tümü", "Aktif", "Pasif");
-        statusFilter.setValue("Tümü");
+        statusFilter.setValue("Aktif"); // Default olarak sadece aktif ödeme noktalarını göster
         statusFilter.setPrefWidth(120);
         statusFilter.setOnAction(e -> filterPaymentPoints());
         
         statusBox.getChildren().addAll(statusLabel, statusFilter);
 
         // Temizle butonu
-        Button clearFiltersButton = new Button("Filtreleri Temizle");
+        Button clearFiltersButton = new Button("🧹 Filtreleri Temizle");
         clearFiltersButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5;");
         clearFiltersButton.setOnAction(e -> clearFilters());
 
@@ -266,11 +269,11 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         controls.setAlignment(Pos.CENTER_LEFT);
         controls.setPadding(new Insets(10));
 
-        Button addButton = new Button("Yeni Ödeme Noktası");
+        Button addButton = new Button("➕ Yeni Ödeme Noktası");
         addButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 5;");
         addButton.setOnAction(e -> showAddPaymentPointDialog());
 
-        Button editButton = new Button("Düzenle");
+        Button editButton = new Button("✏️ Düzenle");
         editButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5;");
         editButton.setOnAction(e -> {
             PaymentPoint selected = paymentPointsTable.getSelectionModel().getSelectedItem();
@@ -281,7 +284,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             }
         });
 
-        Button toggleStatusButton = new Button("Durumu Değiştir");
+        Button toggleStatusButton = new Button("🔄 Durumu Değiştir");
         toggleStatusButton.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 5;");
         toggleStatusButton.setOnAction(e -> {
             PaymentPoint selected = paymentPointsTable.getSelectionModel().getSelectedItem();
@@ -292,7 +295,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             }
         });
 
-        Button deleteButton = new Button("Sil");
+        Button deleteButton = new Button("🗑️ Sil");
         deleteButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;");
         deleteButton.setOnAction(e -> {
             PaymentPoint selected = paymentPointsTable.getSelectionModel().getSelectedItem();
@@ -303,12 +306,12 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             }
         });
 
-        Button refreshButton = new Button("Yenile");
+        Button refreshButton = new Button("🔄 Yenile");
         refreshButton.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-background-radius: 5;");
         refreshButton.setOnAction(e -> loadPaymentPointsData());
 
         // Haritada Göster butonu
-        Button mapButton = new Button("Haritada Göster");
+        Button mapButton = new Button("🗺️ Haritada Göster");
         mapButton.setStyle("-fx-background-color: #16a085; -fx-text-fill: white; -fx-background-radius: 5;");
         mapButton.setOnAction(e -> {
             javafx.application.Platform.runLater(() -> {
@@ -317,7 +320,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         });
 
         // Haritada Tümünü Göster butonu
-        Button mapAllButton = new Button("Haritada Tümünü Göster");
+        Button mapAllButton = new Button("🌍 Haritada Tümünü Göster");
         mapAllButton.setStyle("-fx-background-color: #1abc9c; -fx-text-fill: white; -fx-background-radius: 5;");
         mapAllButton.setOnAction(e -> {
             javafx.application.Platform.runLater(() -> {
@@ -343,7 +346,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         previousButton.setDisable(true); // Başlangıçta ilk sayfadayız
 
         // Sayfa bilgisi
-        pageInfoLabel = new Label("Sayfa 1 (Veri yükleniyor...)");
+        pageInfoLabel = new Label("📄 Sayfa 1 (Veri yükleniyor...)");
         pageInfoLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
         // Sonraki sayfa butonu
@@ -353,12 +356,12 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         nextButton.setDisable(false); // Başlangıçta aktif, API'den veri gelince güncellenecek
 
         // İlk ve son sayfa butonları
-        firstPageButton = new Button("◀◀ İlk");
+        firstPageButton = new Button("⏮️ İlk");
         firstPageButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8 15;");
         firstPageButton.setOnAction(e -> goToFirstPage());
         firstPageButton.setDisable(true); // Başlangıçta ilk sayfadayız
 
-        lastPageButton = new Button("Son ▶▶");
+        lastPageButton = new Button("Son ⏭️");
         lastPageButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8 15;");
         lastPageButton.setOnAction(e -> goToLastPage());
         lastPageButton.setDisable(false); // Başlangıçta aktif, API'den veri gelince güncellenecek
@@ -412,10 +415,10 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         int displayCurrentPage = currentPage + 1;
         String pageInfo;
         if (totalPages > 0) {
-            pageInfo = String.format("Sayfa %d / %d (Toplam: %d kayıt, sayfa başına %d)", 
+            pageInfo = String.format("📄 Sayfa %d / %d (Toplam: %d kayıt, sayfa başına %d)", 
                     displayCurrentPage, totalPages, totalElements, pageSize);
         } else {
-            pageInfo = String.format("Sayfa %d (Veri yükleniyor...)", displayCurrentPage);
+            pageInfo = String.format("📄 Sayfa %d (Veri yükleniyor...)", displayCurrentPage);
         }
         if (pageInfoLabel != null) pageInfoLabel.setText(pageInfo);
     }
@@ -428,7 +431,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             System.out.println("   - Backend için sayfa parametresi: " + currentPage + " (0-tabanlı, doğrudan currentPage)");
             System.out.println("   - Sayfa boyutu: " + pageSize + " (sabit 10 kayıt)");
             System.out.println("   - Sıralama: name");
-            System.out.println("   - Tam API endpoint: http://localhost:8080/v1/api/payment-point?page=" + currentPage + "&size=" + pageSize + "&sort=name");
+            System.out.println("   - Tam API endpoint: http://localhost:8080/v1/api/payment-point?page=" + currentPage + "&sort=id");
             System.out.println("   - Token kullanılmıyor (Postman testine göre)");
 
             // Backend 0-tabanlı sayfa kullanıyor - currentPage'i doğrudan gönder
@@ -441,6 +444,10 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
                 parsePaymentPointsResponse(response);
                 // API'den veri geldi, tabloya ekle
                 updateTableData();
+                // Eğer statusFilter oluşturulmuşsa ve "Aktif" seçiliyse filtreleme yap
+                if (statusFilter != null && "Aktif".equals(statusFilter.getValue())) {
+                    filterPaymentPoints();
+                }
                 // updatePaginationButtons() burada çağrılacak
                 return;
             } else {
@@ -1111,7 +1118,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         searchField.clear();
         cityFilter.setValue("Tümü");
         paymentMethodFilter.setValue("Tümü");
-        statusFilter.setValue("Tümü");
+        statusFilter.setValue("Aktif"); // Status filtresini "Aktif" olarak koru
         
         // Filtreler temizlendiğinde ilk sayfaya dön
         currentPage = 0;
@@ -1343,6 +1350,22 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
 
         // Dialog sonucu
         dialog.showAndWait().ifPresent(createData -> {
+            // Validation
+            if (createData.getName() == null || createData.getName().trim().isEmpty()) {
+                showAlert("❌ Ödeme noktası adı boş olamaz!");
+                return;
+            }
+            
+            if (createData.getAddress() == null || createData.getAddress().getCity() == null || createData.getAddress().getCity().trim().isEmpty()) {
+                showAlert("❌ Şehir bilgisi boş olamaz!");
+                return;
+            }
+            
+            if (createData.getPaymentMethods() == null || createData.getPaymentMethods().isEmpty()) {
+                showAlert("❌ En az bir ödeme yöntemi seçmelisiniz!");
+                return;
+            }
+            
             createPaymentPoint(createData);
         });
     }
@@ -1507,12 +1530,15 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
     private PaymentPointUpdateDTO extractFormData(VBox form) {
         PaymentPointUpdateDTO dto = new PaymentPointUpdateDTO();
         
+        System.out.println("🔍 FORM VERİSİ ÇIKARILMAYA BAŞLANIYOR...");
+        
         // Form elemanlarını dolaş ve verileri çıkar
         for (Node node : form.getChildren()) {
             if (node instanceof TextField) {
                 TextField field = (TextField) node;
                 String userData = (String) field.getUserData();
                 if (userData != null) {
+                    System.out.println("TextField: " + userData + " = " + field.getText());
                     switch (userData) {
                         case "name":
                             dto.setName(field.getText());
@@ -1540,8 +1566,9 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
                                 try {
                                     if (dto.getLocation() == null) dto.setLocation(new PaymentPointUpdateDTO.LocationDTO());
                                     dto.getLocation().setLatitude(Double.parseDouble(field.getText()));
+                                    System.out.println("Latitude set: " + dto.getLocation().getLatitude());
                                 } catch (NumberFormatException e) {
-                                    // Geçersiz sayı, görmezden gel
+                                    System.err.println("Geçersiz latitude: " + field.getText());
                                 }
                             }
                             break;
@@ -1550,8 +1577,9 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
                                 try {
                                     if (dto.getLocation() == null) dto.setLocation(new PaymentPointUpdateDTO.LocationDTO());
                                     dto.getLocation().setLongitude(Double.parseDouble(field.getText()));
+                                    System.out.println("Longitude set: " + dto.getLocation().getLongitude());
                                 } catch (NumberFormatException e) {
-                                    // Geçersiz sayı, görmezden gel
+                                    System.err.println("Geçersiz longitude: " + field.getText());
                                 }
                             }
                             break;
@@ -1562,16 +1590,19 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
                 if ("city".equals(combo.getUserData())) {
                     if (dto.getAddress() == null) dto.setAddress(new PaymentPointUpdateDTO.AddressDTO());
                     dto.getAddress().setCity((String) combo.getValue());
+                    System.out.println("City set: " + combo.getValue());
                 }
             } else if (node instanceof javafx.scene.control.TextArea) {
                 javafx.scene.control.TextArea area = (javafx.scene.control.TextArea) node;
                 if ("description".equals(area.getUserData())) {
                     dto.setDescription(area.getText());
+                    System.out.println("Description set: " + area.getText());
                 }
             } else if (node instanceof javafx.scene.control.CheckBox) {
                 javafx.scene.control.CheckBox checkBox = (javafx.scene.control.CheckBox) node;
                 if ("active".equals(checkBox.getUserData())) {
                     dto.setActive(checkBox.isSelected());
+                    System.out.println("Active set: " + checkBox.isSelected());
                 }
             } else if (node instanceof VBox) {
                 VBox vbox = (VBox) node;
@@ -1586,9 +1617,17 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
                         }
                     }
                     dto.setPaymentMethods(selectedMethods);
+                    System.out.println("Payment methods set: " + selectedMethods);
                 }
             }
         }
+        
+        System.out.println("🔍 FORM VERİSİ ÇIKARILDI:");
+        System.out.println("   - Name: " + dto.getName());
+        System.out.println("   - Active: " + dto.isActive());
+        System.out.println("   - Address: " + (dto.getAddress() != null ? "var" : "null"));
+        System.out.println("   - Location: " + (dto.getLocation() != null ? "var" : "null"));
+        System.out.println("   - Payment Methods: " + (dto.getPaymentMethods() != null ? dto.getPaymentMethods().size() : "null"));
         
         return dto;
     }
@@ -1617,6 +1656,15 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
     private void createPaymentPoint(PaymentPointUpdateDTO createData) {
         try {
             System.out.println("Yeni ödeme noktası oluşturuluyor...");
+            
+            // AccessToken kontrolü
+            if (accessToken == null) {
+                System.err.println("❌ AccessToken null! Giriş yapmanız gerekiyor.");
+                showAlert("❌ Oturum süresi dolmuş. Lütfen tekrar giriş yapın.");
+                return;
+            }
+            
+            System.out.println("AccessToken var: " + accessToken.getToken().substring(0, 20) + "...");
             
             String response = PaymentPointApiClient.createPaymentPoint(createData, accessToken);
             System.out.println("Create response: " + response);
@@ -1720,75 +1768,6 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
     }
 
     // PaymentPoint model sınıfından helper metotlar
-    private PaymentPoint mapToPaymentPoint(String json) {
-        try {
-            Long id = extractLongFromJson(json, "id");
-            String name = extractStringFromJson(json, "name");
-            String description = extractStringFromJson(json, "description");
-            String contactNumber = extractStringFromJson(json, "contactNumber");
-            String workingHours = extractStringFromJson(json, "workingHours");
-            boolean active = extractBooleanFromJson(json, "active");
-            
-            // Location bilgisini çıkar
-            String locationJson = extractObjectFromJson(json, "location");
-            Location location = null;
-            if (locationJson != null && !locationJson.isEmpty()) {
-                double latitude = extractDoubleFromJson(locationJson, "latitude");
-                double longitude = extractDoubleFromJson(locationJson, "longitude");
-                location = new Location(latitude, longitude);
-            }
-            
-            // Address bilgisini çıkar
-            String street = extractStringFromJson(json, "street");
-            String district = extractStringFromJson(json, "district");
-            String city = extractStringFromJson(json, "city");
-            String postalCode = extractStringFromJson(json, "postalCode");
-            Address address = new Address(street, district, city, postalCode);
-            
-            // Payment methods array'ini çıkar
-            List<PaymentMethod> paymentMethods = new ArrayList<>();
-            List<String> paymentMethodStrings = extractArrayFromJson(json, "paymentMethods");
-            for (String method : paymentMethodStrings) {
-                try {
-                    PaymentMethod pm = PaymentMethod.valueOf(method.replace("\"", ""));
-                    paymentMethods.add(pm);
-                } catch (IllegalArgumentException e) {
-                    System.err.println("Bilinmeyen payment method: " + method);
-                }
-            }
-            
-            // Photos array'ini çıkar
-            List<PaymentPhoto> photos = new ArrayList<>();
-            List<String> photoStrings = extractArrayFromJson(json, "photos");
-            for (String photoJson : photoStrings) {
-                if (!photoJson.trim().isEmpty()) {
-                    Long photoId = extractLongFromJson(photoJson, "id");
-                    String photoUrl = extractStringFromJson(photoJson, "url");
-                    
-                    PaymentPhoto photo = new PaymentPhoto();
-                    photo.setId(photoId);
-                    photo.setImageUrl(photoUrl);
-                    photos.add(photo);
-                }
-            }
-            
-            // Tarih alanları
-            LocalDateTime createdAt = extractDateTimeFromJson(json, "createdAt");
-            LocalDateTime lastUpdated = extractDateTimeFromJson(json, "lastUpdated");
-            
-            // Distance bilgisi (isteğe bağlı)
-            Double distance = extractDoubleFromJsonNullable(json, "distance");
-            
-            return new PaymentPoint(id, name, location, address, contactNumber, workingHours, 
-                                    paymentMethods, description, active, photos, createdAt, lastUpdated, distance);
-                                    
-        } catch (Exception e) {
-            System.err.println("PaymentPoint mapping hatası: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-    
     // Helper methods for PaymentPoint model
     private String getPaymentPointFullAddress(PaymentPoint point) {
         if (point.getAddress() != null) {
