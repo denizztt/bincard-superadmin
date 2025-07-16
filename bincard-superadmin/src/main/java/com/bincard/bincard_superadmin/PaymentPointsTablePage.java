@@ -1,5 +1,6 @@
 package com.bincard.bincard_superadmin;
 
+import com.bincard.bincard_superadmin.model.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -571,7 +572,12 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             // API'den çekilen konum verilerini konsola yazdır
             System.out.println("\n===== apiden çekilen konum verileri =====");
             for (PaymentPoint point : paymentPointsList) {
-                System.out.printf(java.util.Locale.US, "- %s: lat=%.6f, lng=%.6f\n", point.getName(), point.getLatitude(), point.getLongitude());
+                Double lat = getPaymentPointLatitude(point);
+                Double lng = getPaymentPointLongitude(point);
+                System.out.printf(java.util.Locale.US, "- %s: lat=%.6f, lng=%.6f\n", 
+                    point.getName(), 
+                    lat != null ? lat : 0.0, 
+                    lng != null ? lng : 0.0);
             }
             System.out.println("========================================\n");
             
@@ -829,12 +835,31 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             }
             
             // Payment methods array'ini çıkar
-            List<String> paymentMethods = extractArrayFromJson(jsonObject, "paymentMethods");
-            System.out.println("Payment methods: " + paymentMethods.size());
+            List<PaymentMethod> paymentMethods = new ArrayList<>();
+            List<String> paymentMethodStrings = extractArrayFromJson(jsonObject, "paymentMethods");
+            for (String method : paymentMethodStrings) {
+                try {
+                    PaymentMethod pm = PaymentMethod.valueOf(method.replace("\"", ""));
+                    paymentMethods.add(pm);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Bilinmeyen payment method: " + method);
+                }
+            }
             
             // Photos array'ini çıkar
-            List<String> photos = extractArrayFromJson(jsonObject, "photos");
-            System.out.println("Photos: " + photos.size());
+            List<PaymentPhoto> photos = new ArrayList<>();
+            List<String> photoStrings = extractArrayFromJson(jsonObject, "photos");
+            for (String photoJson : photoStrings) {
+                if (!photoJson.trim().isEmpty()) {
+                    Long photoId = extractLongFromJson(photoJson, "id");
+                    String photoUrl = extractStringFromJson(photoJson, "url");
+                    
+                    PaymentPhoto photo = new PaymentPhoto();
+                    photo.setId(photoId);
+                    photo.setImageUrl(photoUrl);
+                    photos.add(photo);
+                }
+            }
             
             // DateTime bilgilerini çıkar
             LocalDateTime createdAt = extractDateTimeFromJson(jsonObject, "createdAt");
@@ -843,11 +868,15 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             // Distance bilgisini çıkar
             Double distance = extractDoubleFromJsonNullable(jsonObject, "distance");
             
+            // Location objesini oluştur
+            Location location = new Location(latitude, longitude);
+            
+            // Address objesini oluştur
+            Address address = new Address(street, district, city, postalCode);
+            
             PaymentPoint point = new PaymentPoint(
-                id, name, street, district, city, postalCode,
-                contactNumber, workingHours, paymentMethods,
-                description, active, createdAt, lastUpdated, 
-                distance, latitude, longitude, photos
+                id, name, location, address, contactNumber, workingHours,
+                paymentMethods, description, active, photos, createdAt, lastUpdated, distance
             );
             
             System.out.println("PaymentPoint başarıyla oluşturuldu: " + point.getName());
@@ -860,7 +889,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         }
     }
     
-    // JSON parsing helper methods
+    // JSON parsing helper methods (duplicated methods removed)
     private String extractStringFromJson(String json, String key) {
         try {
             String pattern = "\"" + key + "\"\\s*:\\s*\"([^\"]+)\"";
@@ -1042,10 +1071,11 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
                                   point.getName().toLowerCase().contains(searchText.toLowerCase());
             
             boolean matchesCity = "Tümü".equals(selectedCity) || 
-                                point.getCity().equals(selectedCity);
+                                getPaymentPointCity(point).equals(selectedCity);
             
             boolean matchesPaymentMethod = "Tümü".equals(selectedPaymentMethod) || 
-                                         point.getPaymentMethods().contains(selectedPaymentMethod);
+                                         point.getPaymentMethods().stream()
+                                             .anyMatch(pm -> pm.getDisplayName().equals(selectedPaymentMethod));
             
             boolean matchesStatus = "Tümü".equals(selectedStatus) || 
                                   (point.isActive() && "Aktif".equals(selectedStatus)) ||
@@ -1120,17 +1150,17 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         VBox infoCards = new VBox(10);
         
         infoCards.getChildren().addAll(
-            createInfoCard("📍 Adres", point.getFullAddress()),
-            createInfoCard("🏙️ Şehir", point.getCity()),
+            createInfoCard("📍 Adres", getPaymentPointFullAddress(point)),
+            createInfoCard("🏙️ Şehir", getPaymentPointCity(point)),
             createInfoCard("📞 Telefon", point.getContactNumber()),
             createInfoCard("🕒 Çalışma Saatleri", point.getWorkingHours()),
-            createInfoCard("💳 Ödeme Yöntemleri", point.getPaymentMethodsString()),
+            createInfoCard("💳 Ödeme Yöntemleri", getPaymentPointPaymentMethodsString(point)),
             createInfoCard("📝 Açıklama", point.getDescription() != null ? point.getDescription() : "Açıklama yok"),
-            createInfoCard("📊 Durum", point.getStatusString()),
-            createInfoCard("🌍 Konum", point.getLocationString()),
-            createInfoCard("📸 Fotoğraflar", point.getPhotosString()),
-            createInfoCard("📅 Oluşturulma", point.getCreatedAtString()),
-            createInfoCard("🔄 Son Güncelleme", point.getLastUpdatedString())
+            createInfoCard("📊 Durum", getPaymentPointStatusString(point)),
+            createInfoCard("🌍 Konum", getPaymentPointLocationString(point)),
+            createInfoCard("📸 Fotoğraflar", getPaymentPointPhotosString(point)),
+            createInfoCard("📅 Oluşturulma", getPaymentPointCreatedAtString(point)),
+            createInfoCard("🔄 Son Güncelleme", getPaymentPointLastUpdatedString(point))
         );
         
         // Fotoğraflar varsa, fotoğraf detaylarını göster
@@ -1175,21 +1205,21 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             // Fotoğraf URL'lerini listele
             VBox photosList = new VBox(5);
             for (int i = 0; i < point.getPhotos().size(); i++) {
-                String photoUrl = point.getPhotos().get(i);
+                PaymentPhoto photo = point.getPhotos().get(i);
                 HBox photoRow = new HBox(10);
                 photoRow.setAlignment(Pos.CENTER_LEFT);
                 
                 Label photoIndexLabel = new Label((i + 1) + ".");
                 photoIndexLabel.setStyle("-fx-font-weight: bold; -fx-min-width: 30;");
                 
-                Label photoUrlLabel = new Label(photoUrl);
+                Label photoUrlLabel = new Label(photo.getImageUrl());
                 photoUrlLabel.setWrapText(true);
                 photoUrlLabel.setStyle("-fx-text-fill: #007bff;");
                 
                 // Fotoğraf görüntüleme butonu
                 Button viewPhotoButton = new Button("Görüntüle");
                 viewPhotoButton.setStyle("-fx-background-color: #007bff; -fx-text-fill: white; -fx-background-radius: 3; -fx-padding: 2 8;");
-                viewPhotoButton.setOnAction(e -> openPhotoViewer(photoUrl));
+                viewPhotoButton.setOnAction(e -> openPhotoViewer(photo.getImageUrl()));
                 
                 photoRow.getChildren().addAll(photoIndexLabel, photoUrlLabel, viewPhotoButton);
                 photosList.getChildren().add(photoRow);
@@ -1337,14 +1367,14 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         Label streetLabel = new Label("Sokak");
         TextField streetField = new TextField();
         streetField.setPromptText("Sokak adresini girin...");
-        if (existingPoint != null) streetField.setText(existingPoint.getStreet());
+        if (existingPoint != null) streetField.setText(getPaymentPointStreet(existingPoint));
         streetField.setUserData("street");
 
         // İlçe
         Label districtLabel = new Label("İlçe");
         TextField districtField = new TextField();
         districtField.setPromptText("İlçe adını girin...");
-        if (existingPoint != null) districtField.setText(existingPoint.getDistrict());
+        if (existingPoint != null) districtField.setText(getPaymentPointDistrict(existingPoint));
         districtField.setUserData("district");
 
         // Şehir
@@ -1353,14 +1383,14 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         ComboBox<String> cityCombo = new ComboBox<>();
         cityCombo.getItems().addAll("İstanbul", "Ankara", "İzmir", "Bursa", "Antalya", "Adana", "Gaziantep", "Konya", "Kayseri", "Mersin");
         cityCombo.setEditable(true);
-        if (existingPoint != null) cityCombo.setValue(existingPoint.getCity());
+        if (existingPoint != null) cityCombo.setValue(getPaymentPointCity(existingPoint));
         cityCombo.setUserData("city");
 
         // Posta kodu
         Label postalCodeLabel = new Label("Posta Kodu");
         TextField postalCodeField = new TextField();
         postalCodeField.setPromptText("Posta kodunu girin...");
-        if (existingPoint != null) postalCodeField.setText(existingPoint.getPostalCode());
+        if (existingPoint != null) postalCodeField.setText(getPaymentPointPostalCode(existingPoint));
         postalCodeField.setUserData("postalCode");
 
         // İletişim bilgileri
@@ -1390,7 +1420,8 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         for (String method : methods) {
             javafx.scene.control.CheckBox checkBox = new javafx.scene.control.CheckBox(method);
             checkBox.setUserData(method);
-            if (existingPoint != null && existingPoint.getPaymentMethods().contains(method)) {
+            if (existingPoint != null && existingPoint.getPaymentMethods().stream()
+                    .anyMatch(pm -> pm.name().equals(method))) {
                 checkBox.setSelected(true);
             }
             paymentMethodsBox.getChildren().add(checkBox);
@@ -1415,8 +1446,8 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         Label latLabel = new Label("Enlem");
         TextField latField = new TextField();
         latField.setPromptText("Enlem değeri...");
-        if (existingPoint != null && existingPoint.getLatitude() != 0.0) {
-            latField.setText(String.valueOf(existingPoint.getLatitude()));
+        if (existingPoint != null && getPaymentPointLatitude(existingPoint) != null && getPaymentPointLatitude(existingPoint) != 0.0) {
+            latField.setText(String.valueOf(getPaymentPointLatitude(existingPoint)));
         }
         latField.setUserData("latitude");
 
@@ -1424,8 +1455,8 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         Label lngLabel = new Label("Boylam");
         TextField lngField = new TextField();
         lngField.setPromptText("Boylam değeri...");
-        if (existingPoint != null && existingPoint.getLongitude() != 0.0) {
-            lngField.setText(String.valueOf(existingPoint.getLongitude()));
+        if (existingPoint != null && getPaymentPointLongitude(existingPoint) != null && getPaymentPointLongitude(existingPoint) != 0.0) {
+            lngField.setText(String.valueOf(getPaymentPointLongitude(existingPoint)));
         }
         lngField.setUserData("longitude");
 
@@ -1688,144 +1719,146 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         alert.showAndWait();
     }
 
-    // PaymentPoint iç sınıfı
-    public static class PaymentPoint {
-        private Long id;
-        private String name;
-        private String street;
-        private String district;
-        private String city;
-        private String postalCode;
-        private String contactNumber;
-        private String workingHours;
-        private List<String> paymentMethods;
-        private String description;
-        private boolean active;
-        private LocalDateTime createdAt;
-        private LocalDateTime lastUpdated;
-        private Double distance;
-        private double latitude;
-        private double longitude;
-        private List<String> photos;
-
-        public PaymentPoint(Long id, String name, String street, String district, String city, String postalCode,
-                          String contactNumber, String workingHours, List<String> paymentMethods, 
-                          String description, boolean active, LocalDateTime createdAt, LocalDateTime lastUpdated, 
-                          Double distance, double latitude, double longitude, List<String> photos) {
-            this.id = id;
-            this.name = name;
-            this.street = street;
-            this.district = district;
-            this.city = city;
-            this.postalCode = postalCode;
-            this.contactNumber = contactNumber;
-            this.workingHours = workingHours;
-            this.paymentMethods = paymentMethods != null ? paymentMethods : new ArrayList<>();
-            this.description = description;
-            this.active = active;
-            this.createdAt = createdAt;
-            this.lastUpdated = lastUpdated;
-            this.distance = distance;
-            this.latitude = latitude;
-            this.longitude = longitude;
-            this.photos = photos != null ? photos : new ArrayList<>();
-        }
-
-        // Eski constructor backward compatibility için
-        public PaymentPoint(Long id, String name, String street, String district, String city, String postalCode,
-                          String contactNumber, String workingHours, List<String> paymentMethods, 
-                          String description, boolean active, LocalDateTime createdAt, LocalDateTime lastUpdated, 
-                          Double distance) {
-            this(id, name, street, district, city, postalCode, contactNumber, workingHours, paymentMethods,
-                 description, active, createdAt, lastUpdated, distance, 0.0, 0.0, new ArrayList<>());
-        }
-
-        // Getter ve Setter metotları
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-
-        public String getStreet() { return street; }
-        public void setStreet(String street) { this.street = street; }
-
-        public String getDistrict() { return district; }
-        public void setDistrict(String district) { this.district = district; }
-
-        public String getCity() { return city; }
-        public void setCity(String city) { this.city = city; }
-
-        public String getPostalCode() { return postalCode; }
-        public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
-
-        public String getContactNumber() { return contactNumber; }
-        public void setContactNumber(String contactNumber) { this.contactNumber = contactNumber; }
-
-        public String getWorkingHours() { return workingHours; }
-        public void setWorkingHours(String workingHours) { this.workingHours = workingHours; }
-
-        public List<String> getPaymentMethods() { return paymentMethods; }
-        public void setPaymentMethods(List<String> paymentMethods) { this.paymentMethods = paymentMethods; }
-
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-
-        public boolean isActive() { return active; }
-        public void setActive(boolean active) { this.active = active; }
-
-        public LocalDateTime getCreatedAt() { return createdAt; }
-        public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-        public LocalDateTime getLastUpdated() { return lastUpdated; }
-        public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
-
-        public Double getDistance() { return distance; }
-        public void setDistance(Double distance) { this.distance = distance; }
-        
-        public double getLatitude() { return latitude; }
-        public void setLatitude(double latitude) { this.latitude = latitude; }
-        
-        public double getLongitude() { return longitude; }
-        public void setLongitude(double longitude) { this.longitude = longitude; }
-        
-        public List<String> getPhotos() { return photos; }
-        public void setPhotos(List<String> photos) { this.photos = photos; }
-
-        // Yardımcı metotlar
-        public String getFullAddress() {
-            return street + ", " + district + ", " + city + " " + postalCode;
-        }
-
-        public String getPaymentMethodsString() {
-            return String.join(", ", paymentMethods);
-        }
-
-        public String getStatusString() {
-            return active ? "Aktif" : "Pasif";
-        }
-
-        public String getCreatedAtString() {
-            return createdAt != null ? createdAt.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")) : "";
-        }
-
-        public String getLastUpdatedString() {
-            return lastUpdated != null ? lastUpdated.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")) : "";
-        }
-        
-        public String getPhotosString() {
-            if (photos == null || photos.isEmpty()) {
-                return "Fotoğraf yok";
+    // PaymentPoint model sınıfından helper metotlar
+    private PaymentPoint mapToPaymentPoint(String json) {
+        try {
+            Long id = extractLongFromJson(json, "id");
+            String name = extractStringFromJson(json, "name");
+            String description = extractStringFromJson(json, "description");
+            String contactNumber = extractStringFromJson(json, "contactNumber");
+            String workingHours = extractStringFromJson(json, "workingHours");
+            boolean active = extractBooleanFromJson(json, "active");
+            
+            // Location bilgisini çıkar
+            String locationJson = extractObjectFromJson(json, "location");
+            Location location = null;
+            if (locationJson != null && !locationJson.isEmpty()) {
+                double latitude = extractDoubleFromJson(locationJson, "latitude");
+                double longitude = extractDoubleFromJson(locationJson, "longitude");
+                location = new Location(latitude, longitude);
             }
-            return photos.size() + " fotoğraf";
-        }
-        
-        public String getLocationString() {
-            if (latitude != 0.0 && longitude != 0.0) {
-                return String.format("%.6f, %.6f", latitude, longitude);
+            
+            // Address bilgisini çıkar
+            String street = extractStringFromJson(json, "street");
+            String district = extractStringFromJson(json, "district");
+            String city = extractStringFromJson(json, "city");
+            String postalCode = extractStringFromJson(json, "postalCode");
+            Address address = new Address(street, district, city, postalCode);
+            
+            // Payment methods array'ini çıkar
+            List<PaymentMethod> paymentMethods = new ArrayList<>();
+            List<String> paymentMethodStrings = extractArrayFromJson(json, "paymentMethods");
+            for (String method : paymentMethodStrings) {
+                try {
+                    PaymentMethod pm = PaymentMethod.valueOf(method.replace("\"", ""));
+                    paymentMethods.add(pm);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Bilinmeyen payment method: " + method);
+                }
             }
-            return "Konum bilgisi yok";
+            
+            // Photos array'ini çıkar
+            List<PaymentPhoto> photos = new ArrayList<>();
+            List<String> photoStrings = extractArrayFromJson(json, "photos");
+            for (String photoJson : photoStrings) {
+                if (!photoJson.trim().isEmpty()) {
+                    Long photoId = extractLongFromJson(photoJson, "id");
+                    String photoUrl = extractStringFromJson(photoJson, "url");
+                    
+                    PaymentPhoto photo = new PaymentPhoto();
+                    photo.setId(photoId);
+                    photo.setImageUrl(photoUrl);
+                    photos.add(photo);
+                }
+            }
+            
+            // Tarih alanları
+            LocalDateTime createdAt = extractDateTimeFromJson(json, "createdAt");
+            LocalDateTime lastUpdated = extractDateTimeFromJson(json, "lastUpdated");
+            
+            // Distance bilgisi (isteğe bağlı)
+            Double distance = extractDoubleFromJsonNullable(json, "distance");
+            
+            return new PaymentPoint(id, name, location, address, contactNumber, workingHours, 
+                                    paymentMethods, description, active, photos, createdAt, lastUpdated, distance);
+                                    
+        } catch (Exception e) {
+            System.err.println("PaymentPoint mapping hatası: " + e.getMessage());
+            e.printStackTrace();
+            return null;
         }
+    }
+    
+    // Helper methods for PaymentPoint model
+    private String getPaymentPointFullAddress(PaymentPoint point) {
+        if (point.getAddress() != null) {
+            return point.getAddress().getStreet() + ", " + point.getAddress().getDistrict() + 
+                   ", " + point.getAddress().getCity() + " " + point.getAddress().getPostalCode();
+        }
+        return "";
+    }
+    
+    private String getPaymentPointCity(PaymentPoint point) {
+        return point.getAddress() != null ? point.getAddress().getCity() : "";
+    }
+    
+    private String getPaymentPointPaymentMethodsString(PaymentPoint point) {
+        if (point.getPaymentMethods() != null) {
+            return point.getPaymentMethods().stream()
+                    .map(PaymentMethod::getDisplayName)
+                    .collect(java.util.stream.Collectors.joining(", "));
+        }
+        return "";
+    }
+    
+    private String getPaymentPointStatusString(PaymentPoint point) {
+        return point.isActive() ? "Aktif" : "Pasif";
+    }
+    
+    private String getPaymentPointLocationString(PaymentPoint point) {
+        if (point.getLocation() != null && point.getLocation().getLatitude() != null && 
+            point.getLocation().getLongitude() != null) {
+            return String.format("%.6f, %.6f", point.getLocation().getLatitude(), 
+                                point.getLocation().getLongitude());
+        }
+        return "Konum bilgisi yok";
+    }
+    
+    private String getPaymentPointPhotosString(PaymentPoint point) {
+        if (point.getPhotos() == null || point.getPhotos().isEmpty()) {
+            return "Fotoğraf yok";
+        }
+        return point.getPhotos().size() + " fotoğraf";
+    }
+    
+    private String getPaymentPointCreatedAtString(PaymentPoint point) {
+        return point.getCreatedAt() != null ? 
+               point.getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")) : "";
+    }
+    
+    private String getPaymentPointLastUpdatedString(PaymentPoint point) {
+        return point.getLastUpdated() != null ? 
+               point.getLastUpdated().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")) : "";
+    }
+    
+    private String getPaymentPointStreet(PaymentPoint point) {
+        return point.getAddress() != null ? point.getAddress().getStreet() : "";
+    }
+    
+    private String getPaymentPointDistrict(PaymentPoint point) {
+        return point.getAddress() != null ? point.getAddress().getDistrict() : "";
+    }
+    
+    private String getPaymentPointPostalCode(PaymentPoint point) {
+        return point.getAddress() != null ? point.getAddress().getPostalCode() : "";
+    }
+    
+    private Double getPaymentPointLatitude(PaymentPoint point) {
+        return point.getLocation() != null ? point.getLocation().getLatitude() : null;
+    }
+    
+    private Double getPaymentPointLongitude(PaymentPoint point) {
+        return point.getLocation() != null ? point.getLocation().getLongitude() : null;
     }
     
     private int extractIntFromJson(String json, String key) {

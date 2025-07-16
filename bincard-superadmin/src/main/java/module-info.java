@@ -21,4 +21,5 @@ module com.bincard.bincard_superadmin {
 
     opens com.bincard.bincard_superadmin to javafx.fxml;
     exports com.bincard.bincard_superadmin;
+    exports com.bincard.bincard_superadmin.model;
 }

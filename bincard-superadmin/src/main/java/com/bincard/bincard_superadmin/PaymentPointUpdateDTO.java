@@ -1,6 +1,9 @@
 package com.bincard.bincard_superadmin;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import com.bincard.bincard_superadmin.model.PaymentPoint;
+import com.bincard.bincard_superadmin.model.PaymentMethod;
 
 /**
  * Ödeme noktası güncelleme ve ekleme işlemleri için DTO sınıfı
@@ -59,30 +62,41 @@ public class PaymentPointUpdateDTO {
     /**
      * PaymentPoint'ten PaymentPointUpdateDTO oluşturur
      */
-    public static PaymentPointUpdateDTO fromPaymentPoint(PaymentPointsTablePage.PaymentPoint paymentPoint) {
+    public static PaymentPointUpdateDTO fromPaymentPoint(PaymentPoint paymentPoint) {
         PaymentPointUpdateDTO dto = new PaymentPointUpdateDTO();
         dto.setName(paymentPoint.getName());
         dto.setContactNumber(paymentPoint.getContactNumber());
         dto.setWorkingHours(paymentPoint.getWorkingHours());
-        dto.setPaymentMethods(paymentPoint.getPaymentMethods());
+        
+        // PaymentMethod'ları string listesi olarak çevir
+        if (paymentPoint.getPaymentMethods() != null) {
+            List<String> paymentMethodStrings = paymentPoint.getPaymentMethods().stream()
+                .map(PaymentMethod::name)
+                .collect(Collectors.toList());
+            dto.setPaymentMethods(paymentMethodStrings);
+        }
+        
         dto.setDescription(paymentPoint.getDescription());
         dto.setActive(paymentPoint.isActive());
         
         // Location
-        if (paymentPoint.getLatitude() != 0.0 || paymentPoint.getLongitude() != 0.0) {
+        if (paymentPoint.getLocation() != null && paymentPoint.getLocation().getLatitude() != null && 
+            paymentPoint.getLocation().getLongitude() != null) {
             LocationDTO location = new LocationDTO();
-            location.setLatitude(paymentPoint.getLatitude());
-            location.setLongitude(paymentPoint.getLongitude());
+            location.setLatitude(paymentPoint.getLocation().getLatitude());
+            location.setLongitude(paymentPoint.getLocation().getLongitude());
             dto.setLocation(location);
         }
         
         // Address
-        AddressDTO address = new AddressDTO();
-        address.setStreet(paymentPoint.getStreet());
-        address.setDistrict(paymentPoint.getDistrict());
-        address.setCity(paymentPoint.getCity());
-        address.setPostalCode(paymentPoint.getPostalCode());
-        dto.setAddress(address);
+        if (paymentPoint.getAddress() != null) {
+            AddressDTO address = new AddressDTO();
+            address.setStreet(paymentPoint.getAddress().getStreet());
+            address.setDistrict(paymentPoint.getAddress().getDistrict());
+            address.setCity(paymentPoint.getAddress().getCity());
+            address.setPostalCode(paymentPoint.getAddress().getPostalCode());
+            dto.setAddress(address);
+        }
         
         return dto;
     }

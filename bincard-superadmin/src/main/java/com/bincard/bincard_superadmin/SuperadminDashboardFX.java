@@ -864,39 +864,10 @@ public class SuperadminDashboardFX {
                     
                 // Ödeme Noktaları sayfaları
                 case "PaymentPointsList":
-                    new PaymentPointsTablePage(stage, accessToken, refreshToken);
+                    new PaymentPointsPage(stage, accessToken, refreshToken);
                     break;
                 case "PaymentPointsMap":
-                    new Thread(() -> {
-                        try {
-                            String response = PaymentPointApiClient.getAllPaymentPoints(0, 1000, "name");
-                            List<PaymentPointsTablePage.PaymentPoint> allPoints = new ArrayList<>();
-                            if (response != null && !response.isEmpty()) {
-                                PaymentPointsTablePage dummy = new PaymentPointsTablePage(stage, accessToken, refreshToken);
-                                dummy.parsePaymentPointsResponse(response);
-                                allPoints.addAll(dummy.paymentPointsList);
-                            }
-                            javafx.application.Platform.runLater(() -> {
-                                try {
-                                    PaymentPointsMapPage.showMap(stage, allPoints);
-                                } catch (Exception ex) {
-                                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                                    alert.setTitle("Harita Hatası");
-                                    alert.setHeaderText("Harita açılamadı");
-                                    alert.setContentText("Harita açılırken hata: " + ex.getMessage());
-                                    alert.showAndWait();
-                                }
-                            });
-                        } catch (Exception ex) {
-                            javafx.application.Platform.runLater(() -> {
-                                Alert alert = new Alert(Alert.AlertType.ERROR);
-                                alert.setTitle("Harita Hatası");
-                                alert.setHeaderText("Harita açılamadı");
-                                alert.setContentText("Tüm ödeme noktaları haritada gösterilemedi: " + ex.getMessage());
-                                alert.showAndWait();
-                            });
-                        }
-                    }).start();
+                    new PaymentPointsMapPage(stage, accessToken, refreshToken);
                     break;
                 case "PaymentPointAdd":
                     new PaymentPointAddPage(stage, accessToken, refreshToken);

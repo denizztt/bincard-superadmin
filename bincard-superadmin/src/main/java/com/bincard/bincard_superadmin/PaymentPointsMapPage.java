@@ -1,5 +1,11 @@
 package com.bincard.bincard_superadmin;
 
+import com.bincard.bincard_superadmin.model.PaymentPoint;
+import com.bincard.bincard_superadmin.model.PaymentMethod;
+import com.bincard.bincard_superadmin.model.Location;
+import com.bincard.bincard_superadmin.model.Address;
+import com.bincard.bincard_superadmin.model.PaymentMethod;
+
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -25,7 +31,228 @@ import java.util.Locale;
 
 public class PaymentPointsMapPage {
     
-    public static void showMap(Stage owner, List<PaymentPointsTablePage.PaymentPoint> paymentPoints) {
+    // Yeni constructor - SuperadminPageBase tarzı
+    public PaymentPointsMapPage(Stage stage, TokenDTO accessToken, TokenDTO refreshToken) {
+        // Şimdilik tüm ödeme noktalarını yükle ve göster
+        new Thread(() -> {
+            try {
+                String response = ApiClientFX.getAllPaymentPoints(accessToken, 0, 1000, "name");
+                List<PaymentPoint> allPoints = new ArrayList<>();
+                if (response != null && !response.isEmpty()) {
+                    allPoints = parsePaymentPointsResponse(response);
+                }
+                final List<PaymentPoint> finalPoints = allPoints;
+                javafx.application.Platform.runLater(() -> {
+                    try {
+                        showMap(stage, finalPoints);
+                    } catch (Exception ex) {
+                        System.err.println("Harita gösterilirken hata: " + ex.getMessage());
+                        ex.printStackTrace();
+                    }
+                });
+            } catch (Exception ex) {
+                javafx.application.Platform.runLater(() -> {
+                    System.err.println("Ödeme noktaları alınırken hata: " + ex.getMessage());
+                    ex.printStackTrace();
+                });
+            }
+        }).start();
+    }
+    
+    // JSON parse metodu
+    private List<PaymentPoint> parsePaymentPointsResponse(String response) {
+        List<PaymentPoint> paymentPoints = new ArrayList<>();
+        try {
+            // JSON'dan content array'ini çıkar
+            String contentStart = "\"content\":[";
+            int startIndex = response.indexOf(contentStart);
+            if (startIndex == -1) return paymentPoints;
+            
+            startIndex += contentStart.length();
+            int endIndex = response.indexOf("]", startIndex);
+            if (endIndex == -1) return paymentPoints;
+            
+            String contentArray = response.substring(startIndex, endIndex);
+            
+            // Her payment point objesini parse et
+            int objStart = 0;
+            while ((objStart = contentArray.indexOf("{", objStart)) != -1) {
+                int objEnd = findMatchingBrace(contentArray, objStart);
+                if (objEnd == -1) break;
+                
+                String objStr = contentArray.substring(objStart, objEnd + 1);
+                PaymentPoint point = parsePaymentPointObject(objStr);
+                if (point != null) {
+                    paymentPoints.add(point);
+                }
+                
+                objStart = objEnd + 1;
+            }
+        } catch (Exception e) {
+            System.err.println("JSON parse hatası: " + e.getMessage());
+        }
+        return paymentPoints;
+    }
+    
+    private int findMatchingBrace(String str, int start) {
+        int braceCount = 0;
+        for (int i = start; i < str.length(); i++) {
+            if (str.charAt(i) == '{') braceCount++;
+            else if (str.charAt(i) == '}') {
+                braceCount--;
+                if (braceCount == 0) return i;
+            }
+        }
+        return -1;
+    }
+    
+    private PaymentPoint parsePaymentPointObject(String objStr) {
+        try {
+            PaymentPoint point = new PaymentPoint();
+            
+            // ID
+            String id = extractStringValue(objStr, "id");
+            if (id != null) {
+                try {
+                    point.setId(Long.parseLong(id));
+                } catch (NumberFormatException e) {
+                    // ID parse edilemezse atla
+                }
+            }
+            
+            // Name
+            String name = extractStringValue(objStr, "name");
+            if (name != null) point.setName(name);
+            
+            // Description
+            String description = extractStringValue(objStr, "description");
+            if (description != null) point.setDescription(description);
+            
+            // Location
+            Location location = parseLocation(objStr);
+            if (location != null) point.setLocation(location);
+            
+            // Address
+            Address address = parseAddress(objStr);
+            if (address != null) point.setAddress(address);
+            
+            // Payment Methods
+            List<PaymentMethod> methods = parsePaymentMethods(objStr);
+            if (methods != null) point.setPaymentMethods(methods);
+            
+            // Status - active field'i kullan
+            String active = extractStringValue(objStr, "active");
+            if (active != null) point.setActive(Boolean.parseBoolean(active));
+            
+            return point;
+        } catch (Exception e) {
+            System.err.println("PaymentPoint parse hatası: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    private String extractStringValue(String json, String key) {
+        String pattern = "\"" + key + "\":\"";
+        int startIndex = json.indexOf(pattern);
+        if (startIndex == -1) return null;
+        
+        startIndex += pattern.length();
+        int endIndex = json.indexOf("\"", startIndex);
+        if (endIndex == -1) return null;
+        
+        return json.substring(startIndex, endIndex);
+    }
+    
+    private Location parseLocation(String objStr) {
+        try {
+            String locationStart = "\"location\":{";
+            int startIndex = objStr.indexOf(locationStart);
+            if (startIndex == -1) return null;
+            
+            startIndex += locationStart.length();
+            int endIndex = findMatchingBrace(objStr, startIndex - 1);
+            if (endIndex == -1) return null;
+            
+            String locationStr = objStr.substring(startIndex, endIndex);
+            
+            Location location = new Location();
+            String latitude = extractStringValue(locationStr, "latitude");
+            String longitude = extractStringValue(locationStr, "longitude");
+            
+            if (latitude != null) location.setLatitude(Double.parseDouble(latitude));
+            if (longitude != null) location.setLongitude(Double.parseDouble(longitude));
+            
+            return location;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private Address parseAddress(String objStr) {
+        try {
+            String addressStart = "\"address\":{";
+            int startIndex = objStr.indexOf(addressStart);
+            if (startIndex == -1) return null;
+            
+            startIndex += addressStart.length();
+            int endIndex = findMatchingBrace(objStr, startIndex - 1);
+            if (endIndex == -1) return null;
+            
+            String addressStr = objStr.substring(startIndex, endIndex);
+            
+            Address address = new Address();
+            String street = extractStringValue(addressStr, "street");
+            String city = extractStringValue(addressStr, "city");
+            String district = extractStringValue(addressStr, "district");
+            String postalCode = extractStringValue(addressStr, "postalCode");
+            
+            if (street != null) address.setStreet(street);
+            if (city != null) address.setCity(city);
+            if (district != null) address.setDistrict(district);
+            if (postalCode != null) address.setPostalCode(postalCode);
+            
+            return address;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private List<PaymentMethod> parsePaymentMethods(String objStr) {
+        List<PaymentMethod> methods = new ArrayList<>();
+        try {
+            String methodsStart = "\"paymentMethods\":[";
+            int startIndex = objStr.indexOf(methodsStart);
+            if (startIndex == -1) return methods;
+            
+            startIndex += methodsStart.length();
+            int endIndex = objStr.indexOf("]", startIndex);
+            if (endIndex == -1) return methods;
+            
+            String methodsArray = objStr.substring(startIndex, endIndex);
+            
+            // Her payment method'u parse et
+            int methodStart = 0;
+            while ((methodStart = methodsArray.indexOf("\"", methodStart)) != -1) {
+                int methodEnd = methodsArray.indexOf("\"", methodStart + 1);
+                if (methodEnd == -1) break;
+                
+                String methodStr = methodsArray.substring(methodStart + 1, methodEnd);
+                try {
+                    PaymentMethod method = PaymentMethod.valueOf(methodStr);
+                    methods.add(method);
+                } catch (IllegalArgumentException e) {
+                    // Geçersiz method, atla
+                }
+                
+                methodStart = methodEnd + 1;
+            }
+        } catch (Exception e) {
+            System.err.println("PaymentMethods parse hatası: " + e.getMessage());
+        }
+        return methods;
+    }
+    
+    public static void showMap(Stage owner, List<PaymentPoint> paymentPoints) {
         javafx.application.Platform.runLater(() -> {
             // Kullanıcıya seçenek sun: WebView mi, tarayıcı mı?
             List<String> choices = new ArrayList<>();
@@ -41,7 +268,7 @@ public class PaymentPointsMapPage {
             }
             String selected = result.get();
 
-            List<PaymentPointsTablePage.PaymentPoint> pointsToShow;
+            List<PaymentPoint> pointsToShow;
             if (paymentPoints == null || paymentPoints.isEmpty()) {
                 System.out.println("[DEBUG] Haritada gösterilecek veri yok. Marker eklenmeyecek.");
                 pointsToShow = new java.util.ArrayList<>();
@@ -52,13 +279,16 @@ public class PaymentPointsMapPage {
 
             // HTML ve JS ile Leaflet haritası oluştur
             StringBuilder markersJs = new StringBuilder();
-            for (PaymentPointsTablePage.PaymentPoint point : pointsToShow) {
-                if (point.getLatitude() != 0.0 && point.getLongitude() != 0.0) {
-                    String address = String.format("%s, %s, %s %s",
-                        point.getStreet() != null ? point.getStreet() : "",
-                        point.getDistrict() != null ? point.getDistrict() : "",
-                        point.getCity() != null ? point.getCity() : "",
-                        point.getPostalCode() != null ? point.getPostalCode() : "");
+            for (PaymentPoint point : pointsToShow) {
+                if (point.getLocation() != null && point.getLocation().getLatitude() != 0.0 && point.getLocation().getLongitude() != 0.0) {
+                    String address = "";
+                    if (point.getAddress() != null) {
+                        address = String.format("%s, %s, %s %s",
+                            point.getAddress().getStreet() != null ? point.getAddress().getStreet() : "",
+                            point.getAddress().getDistrict() != null ? point.getAddress().getDistrict() : "",
+                            point.getAddress().getCity() != null ? point.getAddress().getCity() : "",
+                            point.getAddress().getPostalCode() != null ? point.getAddress().getPostalCode() : "");
+                    }
                     String description = point.getDescription() != null && !point.getDescription().isEmpty() ? point.getDescription() : "Açıklama yok";
                     String popupHtml = String.format(
                         "<b>%s</b><br/><span style='font-size:12px;'>%s</span><br/><i style='color:#555;'>%s</i>",
@@ -68,7 +298,7 @@ public class PaymentPointsMapPage {
                     );
                     markersJs.append(String.format(java.util.Locale.US,
                         "L.marker([%f, %f]).addTo(map).bindPopup('%s');\n",
-                        point.getLatitude(), point.getLongitude(), popupHtml
+                        point.getLocation().getLatitude(), point.getLocation().getLongitude(), popupHtml
                     ));
                 }
             }
@@ -147,7 +377,7 @@ public class PaymentPointsMapPage {
         });
     }
     
-    private static void createMapWindow(Stage owner, List<PaymentPointsTablePage.PaymentPoint> paymentPoints) {
+    private static void createMapWindow(Stage owner, List<PaymentPoint> paymentPoints) {
         try {
             System.out.println("🗺️ Stage oluşturuluyor... Thread: " + Thread.currentThread().getName());
             
@@ -204,13 +434,20 @@ public class PaymentPointsMapPage {
             
             // HTML ve JS ile Leaflet haritası oluştur
             StringBuilder markersJs = new StringBuilder();
-            for (PaymentPointsTablePage.PaymentPoint point : paymentPoints) {
-                if (point.getLatitude() != 0.0 && point.getLongitude() != 0.0) {
-                    String address = String.format("%s, %s, %s %s",
-                        point.getStreet() != null ? point.getStreet() : "",
-                        point.getDistrict() != null ? point.getDistrict() : "",
-                        point.getCity() != null ? point.getCity() : "",
-                        point.getPostalCode() != null ? point.getPostalCode() : "");
+            for (PaymentPoint point : paymentPoints) {
+                if (point.getLocation() != null && point.getLocation().getLatitude() != null && 
+                    point.getLocation().getLongitude() != null && 
+                    point.getLocation().getLatitude() != 0.0 && point.getLocation().getLongitude() != 0.0) {
+                    
+                    String address = "";
+                    if (point.getAddress() != null) {
+                        address = String.format("%s, %s, %s %s",
+                            point.getAddress().getStreet() != null ? point.getAddress().getStreet() : "",
+                            point.getAddress().getDistrict() != null ? point.getAddress().getDistrict() : "",
+                            point.getAddress().getCity() != null ? point.getAddress().getCity() : "",
+                            point.getAddress().getPostalCode() != null ? point.getAddress().getPostalCode() : "");
+                    }
+                    
                     String description = point.getDescription() != null && !point.getDescription().isEmpty() ? point.getDescription() : "Açıklama yok";
                     String popupHtml = String.format(
                         "<b>%s</b><br/><span style='font-size:12px;'>%s</span><br/><i style='color:#555;'>%s</i>",
@@ -220,7 +457,7 @@ public class PaymentPointsMapPage {
                     );
                     markersJs.append(String.format(java.util.Locale.US,
                         "L.marker([%f, %f]).addTo(map).bindPopup('%s');\n",
-                        point.getLatitude(), point.getLongitude(), popupHtml
+                        point.getLocation().getLatitude(), point.getLocation().getLongitude(), popupHtml
                     ));
                 }
             }
@@ -419,7 +656,7 @@ public class PaymentPointsMapPage {
         System.out.println("✅ Test marker'ları başarıyla eklendi!");
     }
     
-    private static String createAdvancedMapHTML(List<PaymentPointsTablePage.PaymentPoint> paymentPoints) {
+    private static String createAdvancedMapHTML(List<PaymentPoint> paymentPoints) {
         StringBuilder markersJs = new StringBuilder();
         StringBuilder boundsJs = new StringBuilder();
         int validPointCount = 0;
@@ -440,41 +677,57 @@ public class PaymentPointsMapPage {
         }
         
         // Marker'ları ve bounds'ları oluştur
-        for (PaymentPointsTablePage.PaymentPoint point : paymentPoints) {
+        for (PaymentPoint point : paymentPoints) {
             System.out.println("\n📍 İşlenen nokta: " + point.getName());
-            System.out.println("   - Latitude: " + point.getLatitude());
-            System.out.println("   - Longitude: " + point.getLongitude());
-            System.out.println("   - Şehir: " + point.getCity());
-            System.out.println("   - İlçe: " + point.getDistrict());
+            
+            Double latitude = point.getLocation() != null ? point.getLocation().getLatitude() : null;
+            Double longitude = point.getLocation() != null ? point.getLocation().getLongitude() : null;
+            String city = point.getAddress() != null ? point.getAddress().getCity() : "";
+            String district = point.getAddress() != null ? point.getAddress().getDistrict() : "";
+            
+            System.out.println("   - Latitude: " + latitude);
+            System.out.println("   - Longitude: " + longitude);
+            System.out.println("   - Şehir: " + city);
+            System.out.println("   - İlçe: " + district);
             
             // Koordinat kontrolü - sıfır olmayan ve gerçekçi koordinatlar
-            if (point.getLatitude() != 0.0 && point.getLongitude() != 0.0 &&
-                Math.abs(point.getLatitude()) <= 90 && Math.abs(point.getLongitude()) <= 180) {
+            if (latitude != null && longitude != null && latitude != 0.0 && longitude != 0.0 &&
+                Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180) {
                 
                 validPointCount++;
                 System.out.println("   ✅ Geçerli koordinat - haritaya eklenecek");
                 
                 // Türkiye koordinat kontrolü (yaklaşık)
-                boolean isInTurkey = (point.getLatitude() >= 35.0 && point.getLatitude() <= 43.0) &&
-                                   (point.getLongitude() >= 25.0 && point.getLongitude() <= 45.0);
+                boolean isInTurkey = (latitude >= 35.0 && latitude <= 43.0) &&
+                                   (longitude >= 25.0 && longitude <= 45.0);
                 System.out.println("   🇹🇷 Türkiye sınırları içinde: " + (isInTurkey ? "✅ Evet" : "❌ Hayır"));
                 
                 // Beklenen koordinatlar (DB'den)
                 System.out.println("   📊 Beklenen koordinatlar kontrol:");
-                if (point.getName().contains("Merkez") && point.getCity().equals("İstanbul")) {
+                if (point.getName().contains("Merkez") && city.equals("İstanbul")) {
                     System.out.println("      - Beklenen: Lat ~40.998, Lng ~29.123");
-                    System.out.println("      - Gerçek:   Lat " + point.getLatitude() + ", Lng " + point.getLongitude());
+                    System.out.println("      - Gerçek:   Lat " + latitude + ", Lng " + longitude);
                 }
                 
                 // Adres bilgisini hazırla
+                String street = point.getAddress() != null ? point.getAddress().getStreet() : "";
+                String postalCode = point.getAddress() != null ? point.getAddress().getPostalCode() : "";
                 String address = String.format("%s, %s, %s %s",
-                    point.getStreet() != null ? point.getStreet() : "",
-                    point.getDistrict() != null ? point.getDistrict() : "",
-                    point.getCity() != null ? point.getCity() : "",
-                    point.getPostalCode() != null ? point.getPostalCode() : "");
+                    street,
+                    district,
+                    city,
+                    postalCode);
                 
                 String description = point.getDescription() != null && !point.getDescription().isEmpty() ? 
                     point.getDescription() : "Açıklama bulunmuyor";
+                
+                // Ödeme yöntemlerini string'e çevir
+                String paymentMethodsStr = "";
+                if (point.getPaymentMethods() != null) {
+                    paymentMethodsStr = point.getPaymentMethods().stream()
+                            .map(pm -> pm.getDisplayName())
+                            .collect(java.util.stream.Collectors.joining(", "));
+                }
                 
                 // Durum ve renk
                 String status = point.isActive() ? "Aktif" : "Pasif";
@@ -515,12 +768,12 @@ public class PaymentPointsMapPage {
                     </div>
                     """,
                     escapeHtml(point.getName()),
-                    point.getLatitude(),
-                    point.getLongitude(),
+                    latitude,
+                    longitude,
                     escapeHtml(address),
                     escapeHtml(point.getContactNumber() != null ? point.getContactNumber() : "Bilgi yok"),
                     escapeHtml(point.getWorkingHours() != null ? point.getWorkingHours() : "Bilgi yok"),
-                    escapeHtml(point.getPaymentMethodsString()),
+                    escapeHtml(paymentMethodsStr),
                     escapeHtml(description),
                     iconColor,
                     statusIcon,
@@ -559,8 +812,8 @@ public class PaymentPointsMapPage {
                     
                     """,
                     validPointCount,
-                    point.getLatitude(), 
-                    point.getLongitude(),
+                    latitude, 
+                    longitude,
                     validPointCount,
                     iconColor,
                     validPointCount,
@@ -570,12 +823,12 @@ public class PaymentPointsMapPage {
                 ));
                 
                 // Bounds için koordinat ekle
-                boundsJs.append(String.format("[%f, %f],", point.getLatitude(), point.getLongitude()));
+                boundsJs.append(String.format("[%f, %f],", latitude, longitude));
                 
             } else {
                 System.out.println("   ❌ Geçersiz koordinat - atlanıyor");
-                System.out.println("   - Latitude: " + point.getLatitude() + " (geçerli aralık: -90 ile 90)");
-                System.out.println("   - Longitude: " + point.getLongitude() + " (geçerli aralık: -180 ile 180)");
+                System.out.println("   - Latitude: " + latitude + " (geçerli aralık: -90 ile 90)");
+                System.out.println("   - Longitude: " + longitude + " (geçerli aralık: -180 ile 180)");
             }
         }
         
