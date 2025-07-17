@@ -6,6 +6,7 @@ module com.bincard.bincard_superadmin {
     requires transitive javafx.graphics;
     
     requires java.desktop;
+    requires jdk.jsobject;
 
     requires org.controlsfx.controls;
     requires com.dlsc.formsfx;
