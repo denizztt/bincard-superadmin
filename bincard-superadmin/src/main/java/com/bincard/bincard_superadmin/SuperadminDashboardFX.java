@@ -119,9 +119,15 @@ public class SuperadminDashboardFX {
         paymentPointsMenu.addSubItem(new MenuItem("Tablo Görünümü", accentColor3, FontAwesomeSolid.TABLE, "PaymentPointsList"));
         paymentPointsMenu.addSubItem(new MenuItem("Harita Görünümü", accentColor3, FontAwesomeSolid.MAP_MARKED_ALT, "PaymentPointsMap"));
         
+        // Cüzdanlar menüsü
+        MenuItem walletsMenu = new MenuItem("Cüzdanlar", accentColor4, FontAwesomeSolid.WALLET);
+        walletsMenu.addSubItem(new MenuItem("Cüzdan Durumu Güncelleme", accentColor4, FontAwesomeSolid.EDIT, "WalletStatusUpdate"));
+        walletsMenu.addSubItem(new MenuItem("Tüm Cüzdanlar", accentColor4, FontAwesomeSolid.LIST, "AllWallets"));
+        
         // Alfabetik sırada menü listesine ekle
         menuItems.add(approvals);  // Admin Onayları
         menuItems.add(auditLogs);  // Denetim Kayıtları
+        menuItems.add(walletsMenu); // Cüzdanlar
         menuItems.add(stopsMenu);  // Duraklar
         menuItems.add(newsMenu);   // Haberler
         menuItems.add(stats);      // İstatistikler
