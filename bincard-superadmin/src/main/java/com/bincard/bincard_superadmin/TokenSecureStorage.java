@@ -240,6 +240,45 @@ public class TokenSecureStorage {
     }
     
     /**
+     * Access token'ın süresi yenileme yapması gereken süreye geldi mi kontrol eder (2 dakika kala)
+     * 
+     * @return true eğer access token yenilenmesi gerekiyorsa, false aksi halde
+     * @throws Exception Token okuma sırasında hata oluşursa
+     */
+    public static boolean shouldRefreshAccessToken() throws Exception {
+        TokenPair tokens = retrieveTokens();
+        if (tokens == null || tokens.getAccessExpiry() == null) {
+            return true;
+        }
+        
+        LocalDateTime expiry = LocalDateTime.parse(tokens.getAccessExpiry());
+        LocalDateTime refreshThreshold = expiry.minusMinutes(2); // 2 dakika kala refresh yap
+        return LocalDateTime.now().isAfter(refreshThreshold);
+    }
+    
+    /**
+     * Access token'ın ne kadar süre kaldığını dakika cinsinden döndürür
+     * 
+     * @return Kalan süre dakika cinsinden, token yoksa veya süresi dolmuşsa -1
+     * @throws Exception Token okuma sırasında hata oluşursa
+     */
+    public static long getAccessTokenRemainingMinutes() throws Exception {
+        TokenPair tokens = retrieveTokens();
+        if (tokens == null || tokens.getAccessExpiry() == null) {
+            return -1;
+        }
+        
+        LocalDateTime expiry = LocalDateTime.parse(tokens.getAccessExpiry());
+        LocalDateTime now = LocalDateTime.now();
+        
+        if (now.isAfter(expiry)) {
+            return -1; // Süresi dolmuş
+        }
+        
+        return java.time.Duration.between(now, expiry).toMinutes();
+    }
+    
+    /**
      * Refresh token'ın süresi dolmuş mu kontrol eder
      * 
      * @return true eğer refresh token süresi dolmuşsa, false aksi halde

@@ -18,6 +18,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ComboBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -29,16 +30,19 @@ import javafx.stage.Stage;
 public class SuperadminLoginFX {
     private TextField phoneField;
     private PasswordField passwordField;
+    private TextField passwordVisibleField; // Şifre görünür olduğunda kullanılacak
     private TextField verificationCodeField;
     private Button loginButton;
     private Button verifyButton;
     private Button backButton;
     private Button resendVerificationButton;
+    private Button eyeButton; // Şifre göster/gizle butonu
     private TextArea resultArea;
     private Label countdownLabel;
     private Stage stage;
     private String currentPhone;
     private boolean isVerificationStep = false;
+    private boolean isPasswordVisible = false; // Şifre görünürlük durumu
     private TokenDTO accessToken;
     private TokenDTO refreshToken;
     private Timer tokenRefreshTimer;
@@ -181,23 +185,70 @@ public class SuperadminLoginFX {
         passwordLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         passwordLabel.setTextFill(Color.web("#34495e"));
         
+        // Şifre alanı için container (şifre field + göz butonu)
+        StackPane passwordStackPane = new StackPane();
+        passwordStackPane.setMaxWidth(400);
+        
+        // Gizli şifre alanı
         passwordField = new PasswordField();
         passwordField.setPromptText("6 haneli şifre giriniz");
-        passwordField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #6A4C93; -fx-border-width: 2;");
+        passwordField.setStyle("-fx-font-size: 16; -fx-padding: 12 40 12 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #6A4C93; -fx-border-width: 2;");
         passwordField.setPrefHeight(45);
+        passwordField.setMaxWidth(400);
         
-        // Sadece sayı girişine izin ver ve maksimum 6 hane ile sınırla
+        // Görünür şifre alanı (başlangıçta gizli)
+        passwordVisibleField = new TextField();
+        passwordVisibleField.setPromptText("6 haneli şifre giriniz");
+        passwordVisibleField.setStyle("-fx-font-size: 16; -fx-padding: 12 40 12 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #6A4C93; -fx-border-width: 2;");
+        passwordVisibleField.setPrefHeight(45);
+        passwordVisibleField.setMaxWidth(400);
+        passwordVisibleField.setVisible(false);
+        
+        // Göz butonu (şifre göster/gizle)
+        eyeButton = new Button("👁");
+        eyeButton.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-font-size: 18; -fx-text-fill: #6A4C93; -fx-padding: 0;");
+        eyeButton.setPrefSize(30, 30);
+        StackPane.setAlignment(eyeButton, Pos.CENTER_RIGHT);
+        StackPane.setMargin(eyeButton, new Insets(0, 10, 0, 0));
+        
+        // Şifre alanlarını aynı tutmak için listener'lar
         passwordField.textProperty().addListener((observable, oldValue, newValue) -> {
             if (!newValue.matches("\\d*")) {
                 passwordField.setText(newValue.replaceAll("[^\\d]", ""));
+                return;
             }
-            // Maksimum 6 haneli şifre için sınırla
             if (passwordField.getText().length() > 6) {
                 passwordField.setText(passwordField.getText().substring(0, 6));
+                return;
+            }
+            // Görünür alan ile senkronize et
+            if (!passwordVisibleField.getText().equals(newValue)) {
+                passwordVisibleField.setText(newValue);
             }
         });
-
-        passwordContainer.getChildren().addAll(passwordLabel, passwordField);
+        
+        passwordVisibleField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (!newValue.matches("\\d*")) {
+                passwordVisibleField.setText(newValue.replaceAll("[^\\d]", ""));
+                return;
+            }
+            if (passwordVisibleField.getText().length() > 6) {
+                passwordVisibleField.setText(passwordVisibleField.getText().substring(0, 6));
+                return;
+            }
+            // Gizli alan ile senkronize et
+            if (!passwordField.getText().equals(newValue)) {
+                passwordField.setText(newValue);
+            }
+        });
+        
+        // Göz butonuna tıklama olayı
+        eyeButton.setOnAction(e -> togglePasswordVisibility());
+        
+        // StackPane'e alanları ekle
+        passwordStackPane.getChildren().addAll(passwordField, passwordVisibleField, eyeButton);
+        
+        passwordContainer.getChildren().addAll(passwordLabel, passwordStackPane);
 
         // Doğrulama kodu alanı (başlangıçta gizli)
         VBox verificationContainer = new VBox(8);
@@ -318,7 +369,7 @@ public class SuperadminLoginFX {
 
     private void handleLogin() {
         String phone = phoneField.getText().replaceAll("\\D", "").trim();
-        String password = passwordField.getText();
+        String password = getCurrentPassword();
         String selectedCountry = countryCombo.getValue();
 
         if (phone.isEmpty() || password.isEmpty() || selectedCountry == null) {
@@ -693,5 +744,35 @@ public class SuperadminLoginFX {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss", java.util.Locale.forLanguageTag("tr-TR"));
         clockLabel.setText(now.format(formatter));
+    }
+    
+    /**
+     * Şifre görünürlüğünü değiştirir
+     */
+    private void togglePasswordVisibility() {
+        isPasswordVisible = !isPasswordVisible;
+        
+        if (isPasswordVisible) {
+            // Şifreyi göster
+            passwordField.setVisible(false);
+            passwordVisibleField.setVisible(true);
+            eyeButton.setText("🙈"); // Kapalı göz
+            passwordVisibleField.requestFocus();
+            passwordVisibleField.positionCaret(passwordVisibleField.getText().length());
+        } else {
+            // Şifreyi gizle
+            passwordVisibleField.setVisible(false);
+            passwordField.setVisible(true);
+            eyeButton.setText("👁"); // Açık göz
+            passwordField.requestFocus();
+            passwordField.positionCaret(passwordField.getText().length());
+        }
+    }
+    
+    /**
+     * Aktif şifre alanından şifre değerini alır
+     */
+    private String getCurrentPassword() {
+        return isPasswordVisible ? passwordVisibleField.getText() : passwordField.getText();
     }
 }

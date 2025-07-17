@@ -126,7 +126,7 @@ public class ApiClientFX {
     }
     
     /**
-     * Token süresini kontrol eder ve gerekirse yeniler
+     * Token süresini kontrol eder ve gerekirse yeniler (reactive - süresi dolmuş olanları yeniler)
      */
     public static String ensureValidAccessToken() {
         try {
@@ -160,6 +160,64 @@ public class ApiClientFX {
             return null;
         }
     }
+    
+    /**
+     * Proactive token yenileme - süre bitmeden 2 dakika önce token'ı yeniler
+     * Bu metod API isteklerinden önce çağrılmalı
+     */
+    public static String ensureValidAccessTokenProactive() {
+        try {
+            // Önce süresi dolmuş mu kontrol et
+            if (TokenSecureStorage.isAccessTokenExpired()) {
+                System.out.println("🔄 Access token süresi dolmuş, yenileniyor...");
+                return refreshTokenNow();
+            }
+            
+            // Süre dolmamış ama yenileme zamanı gelmiş mi kontrol et
+            if (TokenSecureStorage.shouldRefreshAccessToken()) {
+                long remainingMinutes = TokenSecureStorage.getAccessTokenRemainingMinutes();
+                System.out.println("⚡ Access token proactive yenileniyor (kalan süre: " + remainingMinutes + " dk)");
+                return refreshTokenNow();
+            }
+            
+            // Token geçerli, mevcut token'ı döndür
+            TokenSecureStorage.TokenPair tokens = TokenSecureStorage.retrieveTokens();
+            return tokens != null ? tokens.getAccessToken() : null;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Proactive token kontrol hatası: " + e.getMessage());
+            // Hata durumunda normal token kontrolüne düş
+            return ensureValidAccessToken();
+        }
+    }
+    
+    /**
+     * Refresh token ile yeni access token alır ve saklar
+     */
+    private static String refreshTokenNow() {
+        try {
+            if (TokenSecureStorage.isRefreshTokenExpired()) {
+                System.out.println("❌ Refresh token da süresi dolmuş, yeniden giriş gerekli");
+                return null;
+            }
+            
+            TokenSecureStorage.TokenPair tokens = TokenSecureStorage.retrieveTokens();
+            if (tokens == null) {
+                System.out.println("❌ Token'lar bulunamadı");
+                return null;
+            }
+            
+            TokenResponse newTokens = refreshAccessToken(tokens.getRefreshToken());
+            TokenSecureStorage.updateAccessToken(newTokens.getAccessToken());
+            
+            System.out.println("✅ Access token başarıyla yenilendi");
+            return newTokens.getAccessToken().getToken();
+            
+        } catch (Exception e) {
+            System.err.println("❌ Token yenileme hatası: " + e.getMessage());
+            return null;
+        }
+    }
 
     // =================================================================
     // UTILITY METHODS
@@ -185,9 +243,20 @@ public class ApiClientFX {
     // Haber API Metotları
     
     public static String getAllNews(TokenDTO accessToken, String platform) throws IOException {
-        System.out.println("📰 getAllNews çağrıldı");
+        System.out.println("📰 getAllNews çağrıldı (Proactive Token Refresh)");
         System.out.println("   - Platform: " + platform);
         System.out.println("   - AccessToken: " + (accessToken != null ? "✅ Mevcut" : "❌ Null"));
+        
+        // Proactive token refresh
+        try {
+            String validToken = ensureValidAccessTokenProactive();
+            if (validToken != null) {
+                accessToken.setToken(validToken);
+                System.out.println("   - Token proactively refreshed ✅");
+            }
+        } catch (Exception e) {
+            System.err.println("   - Proactive token refresh failed, proceeding with current token: " + e.getMessage());
+        }
         
         String endpoint = BASE_URL + "/news/";
         if (platform != null && !platform.isEmpty() && !platform.equals("Tümü")) {
@@ -334,6 +403,84 @@ public class ApiClientFX {
             } else {
                 throw new IOException("Haber oluşturulamadı: " + code + " - " + response.toString());
             }
+        }
+    }
+    
+    /**
+     * Basit haber oluşturma (resim olmadan) - Proactive Token Refresh ile
+     */
+    public static String createSimpleNews(
+            TokenDTO accessToken,
+            String title,
+            String content,
+            String platform,
+            String author
+    ) throws IOException {
+        System.out.println("📰 createSimpleNews çağrıldı (Proactive Token Refresh)");
+        
+        // Proactive token refresh
+        try {
+            String validToken = ensureValidAccessTokenProactive();
+            if (validToken != null) {
+                accessToken.setToken(validToken);
+                System.out.println("   - Token proactively refreshed ✅");
+            }
+        } catch (Exception e) {
+            System.err.println("   - Proactive token refresh failed, proceeding with current token: " + e.getMessage());
+        }
+        
+        // URL yapısını Java 20+ uyumlu şekilde oluştur
+        URL url;
+        try {
+            url = new URI(BASE_URL + "/news/create").toURL();
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URL: " + e.getMessage(), e);
+        }
+
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+        conn.setDoOutput(true);
+
+        // JSON request body oluştur
+        String jsonBody = "{"
+                + "\"title\":\"" + escapeJsonString(title) + "\","
+                + "\"content\":\"" + escapeJsonString(content) + "\","
+                + "\"platform\":\"" + platform + "\","
+                + "\"author\":\"" + escapeJsonString(author) + "\","
+                + "\"priority\":\"MEDIUM\","
+                + "\"type\":\"GENERAL\","
+                + "\"allowFeedback\":true"
+                + "}";
+
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = jsonBody.getBytes("utf-8");
+            os.write(input, 0, input.length);
+        }
+
+        int responseCode = conn.getResponseCode();
+        
+        try (InputStream responseStream = responseCode >= 200 && responseCode < 300 ? 
+                conn.getInputStream() : conn.getErrorStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(responseStream, "utf-8"))) {
+            
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            
+            String jsonResponse = response.toString();
+            System.out.println("Create News Response: " + jsonResponse);
+            
+            if (responseCode >= 200 && responseCode < 300) {
+                return jsonResponse;
+            } else {
+                throw new IOException("Haber oluşturulamadı: " + responseCode + " - " + jsonResponse);
+            }
+        } finally {
+            conn.disconnect();
         }
     }
     
@@ -826,6 +973,19 @@ public class ApiClientFX {
      * GET /v1/api/superadmin/income-summary
      */
     public static String getIncomeSummary(TokenDTO accessToken) throws IOException {
+        System.out.println("💰 getIncomeSummary çağrıldı (Proactive Token Refresh)");
+        
+        // Proactive token refresh
+        try {
+            String validToken = ensureValidAccessTokenProactive();
+            if (validToken != null) {
+                accessToken.setToken(validToken);
+                System.out.println("   - Token proactively refreshed ✅");
+            }
+        } catch (Exception e) {
+            System.err.println("   - Proactive token refresh failed, proceeding with current token: " + e.getMessage());
+        }
+        
         String endpoint = BASE_URL.replace("/v1/api", "/v1/api/superadmin") + "/income-summary";
         
         // URL yapısını Java 20+ uyumlu şekilde oluştur

@@ -180,9 +180,26 @@ public class SuperadminDashboardFX {
     private void startTokenExpiryCheck() {
         Timeline tokenCheckTimeline = new Timeline(new KeyFrame(Duration.minutes(1), e -> {
             try {
-                // Token süresini kontrol et
+                // Proactive token refresh kontrolü - süre bitmeden 2 dakika önce yenile
+                if (TokenSecureStorage.shouldRefreshAccessToken()) {
+                    long remainingMinutes = TokenSecureStorage.getAccessTokenRemainingMinutes();
+                    System.out.println("⚡ Proactive token refresh başlatılıyor (kalan süre: " + remainingMinutes + " dk)");
+                    
+                    // Yeni token al
+                    String newAccessTokenStr = ApiClientFX.ensureValidAccessTokenProactive();
+                    
+                    if (newAccessTokenStr != null) {
+                        // Access token'ı güncelle
+                        this.accessToken.setToken(newAccessTokenStr);
+                        System.out.println("✅ Token proactively refreshed successfully");
+                    } else {
+                        System.out.println("⚠️ Proactive token refresh failed, will try reactive refresh");
+                    }
+                }
+                
+                // Backup: Eğer token süresi dolmuşsa (proactive refresh başarısız olmuşsa)
                 if (TokenSecureStorage.isAccessTokenExpired()) {
-                    System.out.println("🔄 Access token süresi dolmuş, yenileniyor...");
+                    System.out.println("🔄 Access token süresi dolmuş, reactive yenileme başlatılıyor...");
                     
                     // Yeni token al
                     String newAccessTokenStr = ApiClientFX.ensureValidAccessToken();
@@ -190,7 +207,7 @@ public class SuperadminDashboardFX {
                     if (newAccessTokenStr != null) {
                         // Access token'ı güncelle
                         this.accessToken.setToken(newAccessTokenStr);
-                        System.out.println("✅ Token başarıyla yenilendi");
+                        System.out.println("✅ Token reaktif olarak yenilendi");
                     } else {
                         // Token yenilenemedi, giriş ekranına yönlendir
                         System.out.println("❌ Token yenilenemedi, giriş ekranına yönlendiriliyor");
@@ -199,6 +216,7 @@ public class SuperadminDashboardFX {
                         });
                     }
                 }
+                
             } catch (Exception ex) {
                 System.err.println("Token kontrol hatası: " + ex.getMessage());
             }
@@ -888,7 +906,7 @@ public class SuperadminDashboardFX {
                     
                 // Haber alt sayfaları
                 case "NewsAdd":
-                    new NewsPage(stage, accessToken, refreshToken, hostServices);
+                    new NewsAddPage(stage, accessToken, refreshToken);
                     break;
                 case "NewsList":
                     new NewsPage(stage, accessToken, refreshToken, hostServices);
