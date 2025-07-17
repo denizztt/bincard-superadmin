@@ -44,6 +44,9 @@ public class SuperadminLoginFX {
     private Timer tokenRefreshTimer;
     private Timer countdownTimer;
     private int remainingSeconds;
+    private Label clockLabel;
+    private Timer clockTimer;
+    private ComboBox<String> countryCombo;
 
     public SuperadminLoginFX(Stage stage) {
         this.stage = stage;
@@ -56,6 +59,22 @@ public class SuperadminLoginFX {
         mainContainer.setAlignment(Pos.CENTER);
         mainContainer.setStyle("-fx-background-color: linear-gradient(to bottom right, #1F1C2C 0%, #928DAB 100%);");
         mainContainer.setPadding(new Insets(40));
+
+        // Merhaba ve saat üstte
+        Label welcomeLabel = new Label("Merhaba 👋");
+        welcomeLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 28));
+        welcomeLabel.setTextFill(Color.web("#FFFFFF"));
+        welcomeLabel.setAlignment(Pos.CENTER);
+        welcomeLabel.setStyle("-fx-padding: 0 0 0 0;");
+
+        clockLabel = new Label();
+        clockLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 18));
+        clockLabel.setTextFill(Color.WHITE);
+        clockLabel.setAlignment(Pos.CENTER);
+        clockLabel.setStyle("-fx-padding: 0 0 10 0;");
+        startClock();
+
+        mainContainer.getChildren().addAll(welcomeLabel, clockLabel);
 
         // Kart container
         VBox card = new VBox(25);
@@ -77,12 +96,8 @@ public class SuperadminLoginFX {
         phoneLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         phoneLabel.setTextFill(Color.web("#34495e"));
         
-        // Ülke kodu ve kısaltması için HBox
-        HBox phoneInputBox = new HBox(6);
-        phoneInputBox.setAlignment(Pos.CENTER_LEFT);
-
-        // Ülke kodu ve kısaltması için ComboBox (gizli, sadece ok ile açılır menü)
-        ComboBox<String> countryCombo = new ComboBox<>();
+        // Ülke kodu için ComboBox doğrudan görünür ve buton gibi stillenir
+        countryCombo = new ComboBox<>();
         countryCombo.getItems().addAll(
             "TR  +90",
             "US  +1",
@@ -90,44 +105,75 @@ public class SuperadminLoginFX {
             "FR  +33",
             "GB  +44"
         );
+        countryCombo.setEditable(false);
         countryCombo.setValue("TR  +90");
-        countryCombo.setVisible(false); // Sadece ok ile açılır
-        countryCombo.setPrefWidth(0);
-
-        // Seçili ülke kodu ve kısaltması için label
-        Label countryLabel = new Label("TR  +90");
-        countryLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
-        countryLabel.setStyle("-fx-background-color: #f2f2f2; -fx-border-color: #bdbdbd; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 6 10; -fx-cursor: hand;");
-
-        // Aşağı ok simgesi
-        Label arrowLabel = new Label("▼");
-        arrowLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        arrowLabel.setStyle("-fx-text-fill: #555; -fx-padding: 0 4 0 2; -fx-cursor: hand;");
-
-        // Ok veya ülke label'ına tıklanınca ComboBox açılır
-        countryLabel.setOnMouseClicked(e -> countryCombo.show());
-        arrowLabel.setOnMouseClicked(e -> countryCombo.show());
-
-        // ComboBox seçimi değişince label güncellenir
+        countryCombo.getSelectionModel().select("TR  +90");
+        countryCombo.setStyle("-fx-font-size: 14; -fx-background-color: #f2f2f2; -fx-border-color: #bdbdbd; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8 12; -fx-cursor: hand;");
+        countryCombo.setPrefWidth(150);
+        
+        // ComboBox seçim değişikliği listener'ı ekle
         countryCombo.setOnAction(e -> {
-            String selected = countryCombo.getValue();
-            if (selected != null) {
-                countryLabel.setText(selected);
+            String selectedValue = countryCombo.getValue();
+            if (selectedValue != null) {
+                // Seçilen değeri güncelle
+                countryCombo.setValue(selectedValue);
+                // Telefon alanını temizle (ülke değiştiğinde)
+                phoneField.clear();
+            }
+        });
+        
+        countryCombo.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : item);
+            }
+        });
+        countryCombo.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText((empty || item == null) ? null : item);
             }
         });
 
         // Telefon numarası alanı
         phoneField = new TextField();
-        phoneField.setPromptText("Telefon numaranızı giriniz");
+        phoneField.setPromptText("(5xx) xxx xx xx");
         phoneField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #3498db; -fx-border-width: 2;");
         phoneField.setPrefHeight(45);
-        phoneField.setPrefWidth(220);
+        phoneField.setPrefWidth(200);
+
+        // Otomatik formatlama: (555) 000 00 00
+        phoneField.textProperty().addListener((observable, oldValue, newValue) -> {
+            String digits = newValue.replaceAll("\\D", "");
+            if (digits.length() > 10) digits = digits.substring(0, 10);
+            StringBuilder formatted = new StringBuilder();
+            int len = digits.length();
+            if (len > 0) {
+                formatted.append("(");
+                formatted.append(digits.substring(0, Math.min(3, len)));
+                if (len >= 3) formatted.append(") ");
+                if (len > 3) formatted.append(digits.substring(3, Math.min(6, len)));
+                if (len >= 6) formatted.append(" ");
+                if (len > 6) formatted.append(digits.substring(6, Math.min(8, len)));
+                if (len >= 8) formatted.append(" ");
+                if (len > 8) formatted.append(digits.substring(8, Math.min(10, len)));
+            }
+            String formattedStr = formatted.toString();
+            if (!newValue.equals(formattedStr)) {
+                phoneField.setText(formattedStr);
+            }
+        });
 
         // Ülke kodu ve telefon alanını ayır
-        phoneInputBox.getChildren().addAll(countryLabel, arrowLabel, phoneField);
+        HBox phoneInputBox = new HBox(6);
+        phoneInputBox.setAlignment(Pos.CENTER_LEFT);
+        phoneInputBox.getChildren().addAll(countryCombo, phoneField);
+        phoneInputBox.requestLayout();
 
         phoneContainer.getChildren().clear();
-        phoneContainer.getChildren().addAll(phoneLabel, phoneInputBox, countryCombo);
+        phoneContainer.getChildren().addAll(phoneLabel, phoneInputBox);
 
         // Şifre alanı
         VBox passwordContainer = new VBox(8);
@@ -271,16 +317,20 @@ public class SuperadminLoginFX {
     }
 
     private void handleLogin() {
-        String phone = phoneField.getText().trim();
+        String phone = phoneField.getText().replaceAll("\\D", "").trim();
         String password = passwordField.getText();
+        String selectedCountry = countryCombo.getValue();
 
-        if (phone.isEmpty() || password.isEmpty()) {
+        if (phone.isEmpty() || password.isEmpty() || selectedCountry == null) {
             showResult("Tüm alanlar zorunludur!", false);
             return;
         }
 
-        String phoneOnlyDigits = phone.replaceAll("\\D", "");
-        if (!phoneOnlyDigits.matches("^\\d{10,11}$")) {
+        // Türkiye için 10 haneli, diğer ülkeler için farklı validasyon
+        if (selectedCountry.startsWith("TR") && !phone.matches("^\\d{10}$")) {
+            showResult("Türkiye için 10 haneli telefon numarası giriniz!", false);
+            return;
+        } else if (!selectedCountry.startsWith("TR") && !phone.matches("^\\d{10,11}$")) {
             showResult("Geçerli bir telefon numarası giriniz!", false);
             return;
         }
@@ -291,6 +341,9 @@ public class SuperadminLoginFX {
             return;
         }
 
+        // currentPhone'u güncelle
+        currentPhone = phone;
+
         // UI'ı devre dışı bırak
         setUIEnabled(false);
         loginButton.setText("Giriş yapılıyor...");
@@ -300,12 +353,12 @@ public class SuperadminLoginFX {
             try {
                 // İlk aşama: Telefon ve şifre ile giriş
                 // Bu aşamada SMS doğrulama kodu gönderilir
-                LoginResponse response = AuthApiClient.login(phoneOnlyDigits, password);
+                LoginResponse response = AuthApiClient.login(phone, password);
                 
                 Platform.runLater(() -> {
                     if (response.isSuccess()) {
                         // Doğrulama adımına geç
-                        currentPhone = phoneOnlyDigits;
+                        currentPhone = phone;
                         isVerificationStep = true;
                         
                         // UI'ı doğrulama moduna geçir
@@ -624,4 +677,21 @@ public class SuperadminLoginFX {
     }
     
     // Artık kullanılmayan findResendButton metodu kaldırıldı
+
+    // Saat label'ını güncelleyen fonksiyonlar
+    private void startClock() {
+        updateClockLabel();
+        clockTimer = new Timer(true);
+        clockTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                Platform.runLater(() -> updateClockLabel());
+            }
+        }, 1000, 1000);
+    }
+    private void updateClockLabel() {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss", java.util.Locale.forLanguageTag("tr-TR"));
+        clockLabel.setText(now.format(formatter));
+    }
 }
