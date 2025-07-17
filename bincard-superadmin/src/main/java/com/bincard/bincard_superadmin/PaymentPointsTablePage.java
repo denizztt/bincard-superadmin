@@ -35,6 +35,15 @@ import javafx.scene.web.WebEngine;
 import javafx.scene.Scene;
 
 public class PaymentPointsTablePage extends SuperadminPageBase {
+    
+    // Mobil uygulama ile uyumlu renk paleti
+    private static final String PRIMARY_COLOR = "#3F51B5"; // Indigo
+    private static final String ACCENT_COLOR = "#5C6BC0"; // Light Indigo
+    private static final String SECONDARY_COLOR = "#9FA8DA"; // Even lighter Indigo
+    private static final String BACKGROUND_COLOR = "#F8F9FA"; // Very light gray with blue hint
+    private static final String CARD_SHADOW_COLOR = "#E0E0E0"; // Light gray
+    private static final String TEXT_PRIMARY_COLOR = "#212121"; // Very dark gray
+    private static final String TEXT_SECONDARY_COLOR = "#757575"; // Medium gray
 
     // paymentPointsList erişimini public yap
     public List<PaymentPoint> paymentPointsList;
@@ -78,7 +87,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
     protected Node createContent() {
         VBox mainContent = new VBox(20);
         mainContent.setPadding(new Insets(20));
-        mainContent.setStyle("-fx-background-color: #f8f9fa;");
+        mainContent.setStyle("-fx-background-color: " + BACKGROUND_COLOR + ";");
 
         // Başlık
         Label titleLabel = new Label("Ödeme Noktaları Yönetimi");
@@ -270,11 +279,11 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         controls.setPadding(new Insets(10));
 
         Button addButton = new Button("➕ Yeni Ödeme Noktası");
-        addButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 5;");
+        addButton.setStyle("-fx-background-color: " + PRIMARY_COLOR + "; -fx-text-fill: white; -fx-background-radius: 5;");
         addButton.setOnAction(e -> showAddPaymentPointDialog());
 
         Button editButton = new Button("✏️ Düzenle");
-        editButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5;");
+        editButton.setStyle("-fx-background-color: " + ACCENT_COLOR + "; -fx-text-fill: white; -fx-background-radius: 5;");
         editButton.setOnAction(e -> {
             PaymentPoint selected = paymentPointsTable.getSelectionModel().getSelectedItem();
             if (selected != null) {
@@ -341,7 +350,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
 
         // Önceki sayfa butonu
         previousButton = new Button("◀ Önceki");
-        previousButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8 15;");
+        previousButton.setStyle("-fx-background-color: " + ACCENT_COLOR + "; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8 15;");
         previousButton.setOnAction(e -> goToPreviousPage());
         previousButton.setDisable(true); // Başlangıçta ilk sayfadayız
 
@@ -351,7 +360,7 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
 
         // Sonraki sayfa butonu
         nextButton = new Button("Sonraki ▶");
-        nextButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8 15;");
+        nextButton.setStyle("-fx-background-color: " + ACCENT_COLOR + "; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 8 15;");
         nextButton.setOnAction(e -> goToNextPage());
         nextButton.setDisable(false); // Başlangıçta aktif, API'den veri gelince güncellenecek
 
@@ -1483,13 +1492,20 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
         }
         lngField.setUserData("longitude");
 
+        // Konum Seç butonu
+        Button pickLocationButton = new Button("Haritadan Konum Seç");
+        pickLocationButton.setStyle("-fx-background-color: #16a085; -fx-text-fill: white; -fx-background-radius: 5;");
+        pickLocationButton.setOnAction(e -> {
+            showMapPickerDialog(latField, lngField, streetField, districtField, cityCombo, postalCodeField);
+        });
+
         VBox latBox = new VBox(5);
         latBox.getChildren().addAll(latLabel, latField);
         
         VBox lngBox = new VBox(5);
         lngBox.getChildren().addAll(lngLabel, lngField);
 
-        locationBox.getChildren().addAll(latBox, lngBox);
+        locationBox.getChildren().addAll(latBox, lngBox, pickLocationButton);
 
         // Durum
         javafx.scene.control.CheckBox activeCheckBox = new javafx.scene.control.CheckBox("Aktif");
@@ -1852,5 +1868,63 @@ public class PaymentPointsTablePage extends SuperadminPageBase {
             System.err.println("Int extract hatası (" + key + "): " + e.getMessage());
         }
         return 0;
+    }
+
+    private void showMapPickerDialog(TextField latField, TextField lngField, TextField streetField, TextField districtField, ComboBox<String> cityCombo, TextField postalCodeField) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Haritadan Konum Seç");
+        dialog.setHeaderText("Haritadan bir nokta seçin");
+        dialog.getDialogPane().setPrefWidth(700);
+        dialog.getDialogPane().setPrefHeight(600);
+        ButtonType closeButtonType = new ButtonType("Kapat", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().add(closeButtonType);
+
+        WebView webView = new WebView();
+        webView.setPrefSize(650, 500);
+        WebEngine webEngine = webView.getEngine();
+
+        // Google Maps HTML dosyasını yükle (resources klasöründe olmalı)
+        String mapHtmlUrl = null;
+        try {
+            mapHtmlUrl = getClass().getResource("/map_picker.html").toExternalForm();
+        } catch (Exception ex) {
+            // Fallback: try loading from file system for development
+            java.io.File f = new java.io.File("map_picker.html");
+            if (f.exists()) {
+                mapHtmlUrl = f.toURI().toString();
+            }
+        }
+        if (mapHtmlUrl != null) {
+            webEngine.load(mapHtmlUrl);
+        } else {
+            webEngine.loadContent("<html><body><h2>map_picker.html bulunamadı!</h2></body></html>");
+        }
+
+        // JS -> Java köprüsü
+        webEngine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+            if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {
+                // JS'den Java'ya callback fonksiyonu ekle
+                webEngine.executeScript(
+                    "window.javaConnector = { setLocation: function(lat, lng, street, district, city, postalCode) { " +
+                    "    javafx.scene.web.WebEngine webEngine = this; " +
+                    "    webEngine.executeScript('window.java.setLocation(' + lat + ',' + lng + ',\'" +
+                    "        ' + street + '\',\'' + district + '\',\'' + city + '\',\'' + postalCode + '\')'); " +
+                    "}};"
+                );
+                // Java tarafında JS fonksiyonunu yakala
+                webEngine.executeScript("window.java = { setLocation: function(lat, lng, street, district, city, postalCode) { javafx.application.Platform.runLater(function() { window.javaBridge.setLocation(lat, lng, street, district, city, postalCode); }); } };");
+            }
+        });
+
+        // Java tarafında JS'den çağrılacak köprü
+        webEngine.getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+            if (newState == javafx.concurrent.Worker.State.SUCCEEDED) {
+                // JavaScript köprüsü oluştur, ancak JSObject kullanmadan basit çözüm
+                System.out.println("Harita yüklendi, konum seçme aktif");
+            }
+        });
+
+        dialog.getDialogPane().setContent(webView);
+        dialog.showAndWait();
     }
 }

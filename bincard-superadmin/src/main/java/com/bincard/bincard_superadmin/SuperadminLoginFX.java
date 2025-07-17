@@ -15,7 +15,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ComboBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -72,12 +77,57 @@ public class SuperadminLoginFX {
         phoneLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         phoneLabel.setTextFill(Color.web("#34495e"));
         
+        // Ülke kodu ve kısaltması için HBox
+        HBox phoneInputBox = new HBox(6);
+        phoneInputBox.setAlignment(Pos.CENTER_LEFT);
+
+        // Ülke kodu ve kısaltması için ComboBox (gizli, sadece ok ile açılır menü)
+        ComboBox<String> countryCombo = new ComboBox<>();
+        countryCombo.getItems().addAll(
+            "TR  +90",
+            "US  +1",
+            "DE  +49",
+            "FR  +33",
+            "GB  +44"
+        );
+        countryCombo.setValue("TR  +90");
+        countryCombo.setVisible(false); // Sadece ok ile açılır
+        countryCombo.setPrefWidth(0);
+
+        // Seçili ülke kodu ve kısaltması için label
+        Label countryLabel = new Label("TR  +90");
+        countryLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 15));
+        countryLabel.setStyle("-fx-background-color: #f2f2f2; -fx-border-color: #bdbdbd; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 6 10; -fx-cursor: hand;");
+
+        // Aşağı ok simgesi
+        Label arrowLabel = new Label("▼");
+        arrowLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        arrowLabel.setStyle("-fx-text-fill: #555; -fx-padding: 0 4 0 2; -fx-cursor: hand;");
+
+        // Ok veya ülke label'ına tıklanınca ComboBox açılır
+        countryLabel.setOnMouseClicked(e -> countryCombo.show());
+        arrowLabel.setOnMouseClicked(e -> countryCombo.show());
+
+        // ComboBox seçimi değişince label güncellenir
+        countryCombo.setOnAction(e -> {
+            String selected = countryCombo.getValue();
+            if (selected != null) {
+                countryLabel.setText(selected);
+            }
+        });
+
+        // Telefon numarası alanı
         phoneField = new TextField();
         phoneField.setPromptText("Telefon numaranızı giriniz");
         phoneField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #3498db; -fx-border-width: 2;");
         phoneField.setPrefHeight(45);
+        phoneField.setPrefWidth(220);
 
-        phoneContainer.getChildren().addAll(phoneLabel, phoneField);
+        // Ülke kodu ve telefon alanını ayır
+        phoneInputBox.getChildren().addAll(countryLabel, arrowLabel, phoneField);
+
+        phoneContainer.getChildren().clear();
+        phoneContainer.getChildren().addAll(phoneLabel, phoneInputBox, countryCombo);
 
         // Şifre alanı
         VBox passwordContainer = new VBox(8);

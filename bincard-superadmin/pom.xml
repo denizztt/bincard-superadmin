@@ -35,6 +35,7 @@
       <artifactId>javafx-web</artifactId>
       <version>17.0.6</version>
     </dependency>
+    <!-- JavaFX WebView ve JSObject için yukarıdaki bağımlılık gereklidir -->
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-swing</artifactId>

@@ -19,7 +19,7 @@ module com.bincard.bincard_superadmin {
     requires transitive org.kordamp.ikonli.fontawesome5;
     requires transitive org.kordamp.ikonli.core;
 
-    opens com.bincard.bincard_superadmin to javafx.fxml;
+    opens com.bincard.bincard_superadmin to javafx.fxml, javafx.web;
     exports com.bincard.bincard_superadmin;
     exports com.bincard.bincard_superadmin.model;
 }

@@ -1,9 +1,16 @@
 package com.bincard.bincard_superadmin;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -12,6 +19,8 @@ import javafx.stage.Stage;
 
 public class MainMenuFX {
     private Stage stage;
+    private Label timeLabel;
+    private Timer timer;
 
     public MainMenuFX(Stage stage) {
         this.stage = stage;
@@ -25,8 +34,21 @@ public class MainMenuFX {
         mainContainer.setStyle("-fx-background-color: linear-gradient(to bottom right, #1F1C2C 0%, #928DAB 100%);");
         mainContainer.setPadding(new Insets(40));
 
+        // Saat label'ı - üst sağ köşe
+        timeLabel = new Label();
+        timeLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 18));
+        timeLabel.setTextFill(Color.WHITE);
+        timeLabel.setAlignment(Pos.TOP_RIGHT);
+        mainContainer.getChildren().add(timeLabel);
+
+        // Merhaba yazısı ve emoji
+        Label welcomeLabel = new Label("Merhaba 👋");
+        welcomeLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 28));
+        welcomeLabel.setTextFill(Color.web("#FFFFFF"));
+        welcomeLabel.setAlignment(Pos.CENTER);
+
         // Başlık
-        javafx.scene.control.Label title = new javafx.scene.control.Label("Bincard Superadmin Paneli");
+        Label title = new Label("Bincard Superadmin Paneli");
         title.setFont(Font.font("Montserrat", FontWeight.BOLD, 36));
         title.setTextFill(Color.web("#FFFFFF"));
         title.setAlignment(Pos.CENTER);
@@ -54,34 +76,53 @@ public class MainMenuFX {
             }
         });
         
-        // Kayıt ol butonu
-        Button signupButton = new Button("Kayıt Ol");
-        signupButton.setFont(Font.font("Montserrat", FontWeight.BOLD, 20));
-        signupButton.setStyle("-fx-background-color: #8e2de2; -fx-text-fill: white; -fx-background-radius: 16; -fx-cursor: hand; -fx-padding: 18 36; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 0);");
-        signupButton.setPrefWidth(320);
-        signupButton.setPrefHeight(65);
-        signupButton.setOnMouseEntered(e -> signupButton.setStyle("-fx-background-color: #7A1DC1; -fx-text-fill: white; -fx-background-radius: 16; -fx-cursor: hand; -fx-padding: 18 36; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 15, 0, 0, 0);"));
-        signupButton.setOnMouseExited(e -> signupButton.setStyle("-fx-background-color: #8e2de2; -fx-text-fill: white; -fx-background-radius: 16; -fx-cursor: hand; -fx-padding: 18 36; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 0);"));
-
-        // Event handler
-        signupButton.setOnAction(e -> {
-            try {
-                new SuperadminSignupFX(stage);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        });
-        
-        // Butonları ekle
-        buttonContainer.getChildren().addAll(loginButton, signupButton);
+        // Butonları ekle (sadece giriş butonu)
+        buttonContainer.getChildren().add(loginButton);
 
         // Ana container'a elemanları ekle
-        mainContainer.getChildren().addAll(title, buttonContainer);
+        mainContainer.getChildren().addAll(welcomeLabel, title, buttonContainer);
 
         // Scene oluştur
         Scene scene = new Scene(mainContainer, 800, 600);
         stage.setScene(scene);
         stage.setTitle("Bincard Superadmin Paneli");
         stage.setResizable(false);
+        
+        // Stage kapandığında timer'ı durdur
+        stage.setOnCloseRequest(e -> {
+            if (timer != null) {
+                timer.cancel();
+            }
+        });
+        
+        // Saati başlat
+        startClock();
     }
-} 
+    
+    /**
+     * Saat timer'ını başlatır
+     */
+    private void startClock() {
+        // İlk güncelleme
+        updateTimeLabel();
+        
+        // Her saniye güncelle
+        timer = new Timer(true);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                Platform.runLater(() -> updateTimeLabel());
+            }
+        }, 1000, 1000);
+    }
+    
+    /**
+     * Saat label'ını günceller
+     */
+    private void updateTimeLabel() {
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss", 
+            java.util.Locale.forLanguageTag("tr-TR"));
+        timeLabel.setText(now.format(formatter));
+    }
+}

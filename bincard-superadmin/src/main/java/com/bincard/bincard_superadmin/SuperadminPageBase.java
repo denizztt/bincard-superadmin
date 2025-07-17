@@ -23,6 +23,15 @@ import org.kordamp.ikonli.javafx.FontIcon;
  * Header, footer ve temel sayfa yapısını içerir.
  */
 public abstract class SuperadminPageBase {
+    // Mobil uygulama ile uyumlu renk paleti
+    protected static final String PRIMARY_COLOR = "#3F51B5"; // Indigo
+    protected static final String ACCENT_COLOR = "#5C6BC0"; // Light Indigo
+    protected static final String SECONDARY_COLOR = "#9FA8DA"; // Even lighter Indigo
+    protected static final String BACKGROUND_COLOR = "#F8F9FA"; // Very light gray with blue hint
+    protected static final String CARD_SHADOW_COLOR = "#E0E0E0"; // Light gray
+    protected static final String TEXT_PRIMARY_COLOR = "#212121"; // Very dark gray
+    protected static final String TEXT_SECONDARY_COLOR = "#757575"; // Medium gray
+    
     protected Stage stage;
     protected TokenDTO accessToken;
     protected TokenDTO refreshToken;
@@ -43,7 +52,7 @@ public abstract class SuperadminPageBase {
     private void createBasicUI() {
         // Ana container
         root = new BorderPane();
-        root.setStyle("-fx-background-color: #f0f2f5;");
+        root.setStyle("-fx-background-color: " + BACKGROUND_COLOR + ";");
         
         // Üst panel (Header)
         HBox header = createHeader();
@@ -73,19 +82,12 @@ public abstract class SuperadminPageBase {
     /**
      * Header bölümünü oluşturur
      */
-    // Soft renk paleti için renkler
-    protected final String mainColor = "#5d5c61"; // Ana gri renk
-    protected final String accentColor1 = "#379683"; // Yumuşak yeşil
-    protected final String accentColor2 = "#7395ae"; // Yumuşak mavi
-    protected final String accentColor3 = "#557a95"; // Koyu mavi
-    protected final String accentColor4 = "#b1a296"; // Yumuşak bej
-    
     protected HBox createHeader() {
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(15, 25, 15, 25));
         header.setSpacing(20);
-        header.setStyle("-fx-background-color: " + mainColor + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);");
+        header.setStyle("-fx-background-color: " + PRIMARY_COLOR + "; -fx-effect: dropshadow(gaussian, " + CARD_SHADOW_COLOR + ", 10, 0, 0, 3);");
         
         // Geri dön butonu - ikon ile
         FontIcon backIcon = new FontIcon(FontAwesomeSolid.ARROW_LEFT);
@@ -94,16 +96,16 @@ public abstract class SuperadminPageBase {
         
         Button backButton = new Button();
         backButton.setGraphic(backIcon);
-        backButton.setStyle("-fx-background-color: " + accentColor1 + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);");
+        backButton.setStyle("-fx-background-color: " + ACCENT_COLOR + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, " + CARD_SHADOW_COLOR + ", 8, 0, 0, 2);");
         backButton.setOnAction(e -> goToHomePage());
         
         // Hover efektleri ekle
         backButton.setOnMouseEntered(e -> {
-            backButton.setStyle("-fx-background-color: " + accentColor2 + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 10, 0, 0, 3);");
+            backButton.setStyle("-fx-background-color: " + SECONDARY_COLOR + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, " + CARD_SHADOW_COLOR + ", 10, 0, 0, 3);");
             backIcon.setIconColor(Color.WHITE);
         });
         backButton.setOnMouseExited(e -> {
-            backButton.setStyle("-fx-background-color: " + accentColor1 + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 2);");
+            backButton.setStyle("-fx-background-color: " + ACCENT_COLOR + "; -fx-background-radius: 8; -fx-cursor: hand; -fx-padding: 12 15; -fx-effect: dropshadow(gaussian, " + CARD_SHADOW_COLOR + ", 8, 0, 0, 2);");
             backIcon.setIconColor(Color.WHITE);
         });
         
@@ -144,7 +146,7 @@ public abstract class SuperadminPageBase {
         HBox footer = new HBox();
         footer.setAlignment(Pos.CENTER);
         footer.setPadding(new Insets(15));
-        footer.setStyle("-fx-background-color: " + mainColor + ";");
+        footer.setStyle("-fx-background-color: " + PRIMARY_COLOR + ";");
         
         Label footerText = new Label("© 2025 Bincard Superadmin Panel | Tüm Hakları Saklıdır");
         footerText.setFont(Font.font("Montserrat", FontWeight.NORMAL, 14));

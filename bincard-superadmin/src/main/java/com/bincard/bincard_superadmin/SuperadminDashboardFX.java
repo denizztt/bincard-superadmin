@@ -38,12 +38,21 @@ public class SuperadminDashboardFX {
     private HostServices hostServices;
     private List<MenuItem> menuItems = new ArrayList<>();
     
-    // Soft renk paleti için renkler - SubMenu ve başlıklar için kullanılıyor
-    private final String mainColor = "#607d8b"; // Daha açık mavi-gri ton - Sidebar arkaplanı için kullanılıyor
-    private final String accentColor1 = "#4caf50"; // Yumuşak yeşil
-    private final String accentColor2 = "#64b5f6"; // Canlı mavi
-    private final String accentColor3 = "#5c6bc0"; // Indigo tonu
-    private final String accentColor4 = "#ffb74d"; // Sıcak amber rengi
+    // Mobil uygulama ile uyumlu modern renk paleti
+    private final String primaryColor = "#3F51B5"; // Indigo - Ana renk
+    private final String accentColor = "#5C6BC0"; // Light Indigo - Vurgu rengi
+    private final String secondaryColor = "#9FA8DA"; // Even lighter Indigo - İkincil renk
+    private final String backgroundColor = "#F8F9FA"; // Very light gray with blue hint - Arkaplan
+    private final String cardShadowColor = "#E0E0E0"; // Light gray - Kart gölgesi
+    private final String textPrimaryColor = "#212121"; // Very dark gray - Ana metin
+    private final String textSecondaryColor = "#757575"; // Medium gray - İkincil metin
+    
+    // Sidebar gradient için değiştirilmiş ana renk
+    private final String mainColor = "linear-gradient(to bottom, " + primaryColor + " 0%, " + accentColor + " 100%)"; // Indigo gradient - Sidebar için
+    private final String accentColor1 = secondaryColor; // Light Indigo tonu
+    private final String accentColor2 = accentColor; // Light Indigo
+    private final String accentColor3 = primaryColor; // Ana Indigo
+    private final String accentColor4 = "#7986CB"; // Medium Indigo tonu
     
     // Alt menülerin görünürlük durumları
     private Map<String, VBox> subMenuContainers = new HashMap<>();
@@ -194,7 +203,7 @@ public class SuperadminDashboardFX {
     private void createUI() {
         // Ana container
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #f0f2f5;");
+        root.setStyle("-fx-background-color: " + backgroundColor + ";");
         
         // Üst panel (Header)
         HBox header = createHeader();
@@ -251,7 +260,7 @@ public class SuperadminDashboardFX {
         // Sol taraf - Dashboard başlığı
         Label dashboardTitle = new Label("Ana Sayfa");
         dashboardTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
-        dashboardTitle.setTextFill(Color.web("#2d3436"));
+        dashboardTitle.setTextFill(Color.web(textPrimaryColor));
         dashboardTitle.setPadding(new Insets(0, 0, 0, 0));
         
         // Orta kısım - boş alan için spacer
@@ -266,7 +275,7 @@ public class SuperadminDashboardFX {
         // Bildirim ikonu - tıklanabilir ve mavi renkli
         FontIcon notificationIcon = new FontIcon(FontAwesomeSolid.BELL);
         notificationIcon.setIconSize(18);
-        notificationIcon.setIconColor(Color.web("#4e54c8"));
+        notificationIcon.setIconColor(Color.web(primaryColor));
         HBox notificationBox = new HBox(notificationIcon);
         notificationBox.setAlignment(Pos.CENTER);
         notificationBox.setPadding(new Insets(0, 10, 0, 0));
@@ -288,20 +297,20 @@ public class SuperadminDashboardFX {
         // Kullanıcı avatarı ikonu
         FontIcon avatarIcon = new FontIcon(FontAwesomeSolid.USER_CIRCLE);
         avatarIcon.setIconSize(24);
-        avatarIcon.setIconColor(Color.web("#4e54c8"));
+        avatarIcon.setIconColor(Color.web(primaryColor));
         HBox avatarContainer = new HBox(avatarIcon);
         avatarContainer.setAlignment(Pos.CENTER);
         avatarContainer.setPadding(new Insets(0, 5, 0, 0));
         
         Label userInfo = new Label("Superadmin");
         userInfo.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 16));
-        userInfo.setTextFill(Color.web("#2d3436"));
+        userInfo.setTextFill(Color.web(textPrimaryColor));
         
         userInfoBox.getChildren().addAll(avatarContainer, userInfo);
         
         // Çıkış butonu - basit metin buton
         Button logoutButton = new Button("Çıkış");
-        logoutButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 5 10; -fx-cursor: hand;");
+        logoutButton.setStyle("-fx-background-color: " + primaryColor + "; -fx-text-fill: white; -fx-background-radius: 20; -fx-padding: 5 10; -fx-cursor: hand;");
         logoutButton.setOnAction(e -> logout());
         
         rightSide.getChildren().addAll(notificationBox, userInfoBox, logoutButton);
@@ -321,7 +330,7 @@ public class SuperadminDashboardFX {
         
         Label footerText = new Label("© 2025 Bincard Superadmin Panel | Tüm Hakları Saklıdır");
         footerText.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
-        footerText.setTextFill(Color.web("#636e72"));
+        footerText.setTextFill(Color.web(textSecondaryColor));
         
         footer.getChildren().add(footerText);
         return footer;
@@ -332,7 +341,7 @@ public class SuperadminDashboardFX {
      */
     private VBox createSidebar() {
         VBox sidebar = new VBox(5);
-        sidebar.setStyle("-fx-background-color: " + mainColor + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 8, 0, 0, 0);");
+        sidebar.setStyle("-fx-background: " + mainColor + "; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 12, 0, 0, 0);");
         sidebar.setPrefWidth(250);
         sidebar.setPadding(new Insets(20, 0, 20, 0));
         sidebar.setAlignment(Pos.TOP_CENTER);
@@ -595,33 +604,51 @@ public class SuperadminDashboardFX {
         VBox content = new VBox(30);
         content.setAlignment(Pos.CENTER);
         content.setPadding(new Insets(50));
-        content.setStyle("-fx-background-color: #f0f2f5;");
+        content.setStyle("-fx-background-color: linear-gradient(to bottom, " + primaryColor + " 0%, " + accentColor + " 100%);");
+        
+        // Kullanıcı adını al (basit bir çözüm)
+        String userDisplayName = "Yönetici";
         
         // Hoşgeldiniz başlığı
-        Label welcomeTitle = new Label("Bincard Superadmin Paneline Hoşgeldiniz");
-        welcomeTitle.setFont(Font.font("Montserrat", FontWeight.BOLD, 32));
-        welcomeTitle.setTextFill(Color.web("#2d3436"));
+        Label welcomeTitle = new Label("Merhaba " + userDisplayName + " 👋");
+        welcomeTitle.setFont(Font.font("Montserrat", FontWeight.BOLD, 36));
+        welcomeTitle.setTextFill(Color.WHITE);
+        
+        // Alt başlık
+        Label subtitle = new Label("Bincard Superadmin Panel'e Hoşgeldiniz");
+        subtitle.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 20));
+        subtitle.setTextFill(Color.web("#f8f9fa"));
         
         // Açıklama metni
-        Label description = new Label("Yönetim işlemleri için sol taraftaki menüyü kullanabilirsiniz.");
-        description.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 18));
-        description.setTextFill(Color.web("#636e72"));
+        Label description = new Label("Sistem yönetimi ve analiz işlemleri için tasarlanmış kontrol paneli");
+        description.setFont(Font.font("Segoe UI", FontWeight.LIGHT, 16));
+        description.setTextFill(Color.web("#e9ecef"));
         
-        // Zaman bilgisi
-        Label timeLabel = new Label("Giriş Zamanı: " + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm")));
-        timeLabel.setFont(Font.font("Segoe UI", FontWeight.LIGHT, 16));
-        timeLabel.setTextFill(Color.web("#636e72"));
+        // Sistem saati - Anlık güncellenen
+        Label timeLabel = new Label();
+        timeLabel.setFont(Font.font("Segoe UI", FontWeight.MEDIUM, 18));
+        timeLabel.setTextFill(Color.WHITE);
+        
+        // Saati güncelle
+        updateTimeLabel(timeLabel);
+        
+        // Saati her saniye güncelle
+        javafx.animation.Timeline timeline = new javafx.animation.Timeline(
+            new javafx.animation.KeyFrame(javafx.util.Duration.seconds(1), e -> updateTimeLabel(timeLabel))
+        );
+        timeline.setCycleCount(javafx.animation.Timeline.INDEFINITE);
+        timeline.play();
         
         // İstatistik kartları
         HBox statsContainer = new HBox(20);
         statsContainer.setAlignment(Pos.CENTER);
         statsContainer.setPadding(new Insets(30, 0, 0, 0));
         
-        // İstatistik kartları - API'dan veri yüklenene kadar demo değerler
-        VBox totalUsers = createStatCard("Toplam Kullanıcılar", "12,543", "#4e54c8", "\uf0c0");
-        VBox activeUsers = createStatCard("Aktif Kullanıcılar", "8,729", "#2ecc71", "\uf0c1");
-        VBox totalBuses = createStatCard("Toplam Otobüsler", "342", "#3498db", "\uf207");
-        VBox dailyIncome = createStatCard("Günlük Gelir", "₺0", "#e74c3c", "\uf155");
+        // İstatistik kartları - Gerçek veriler yüklenene kadar sıfır değerler
+        VBox totalUsers = createStatCard("Toplam Kullanıcılar", "0", primaryColor, "\uf0c0");
+        VBox activeUsers = createStatCard("Aktif Kullanıcılar", "0", accentColor, "\uf0c1");
+        VBox totalBuses = createStatCard("Toplam Otobüsler", "0", secondaryColor, "\uf207");
+        VBox dailyIncome = createStatCard("Günlük Gelir", "₺0", "#7986CB", "\uf155");
         
         statsContainer.getChildren().addAll(totalUsers, activeUsers, totalBuses, dailyIncome);
         
@@ -634,7 +661,7 @@ public class SuperadminDashboardFX {
         quickActionsContainer.setPadding(new Insets(40, 0, 0, 0));
         // Harita butonunu kaldırdım, quickActionsContainer'a ekleme yok
         content.getChildren().clear();
-        content.getChildren().addAll(welcomeTitle, description, timeLabel, statsContainer, quickActionsContainer);
+        content.getChildren().addAll(welcomeTitle, subtitle, description, timeLabel, statsContainer, quickActionsContainer);
         
         return content;
     }
@@ -647,24 +674,32 @@ public class SuperadminDashboardFX {
         statCard.setAlignment(Pos.CENTER);
         statCard.setPadding(new Insets(20));
         statCard.setPrefWidth(200);
-        statCard.setStyle("-fx-background-color: white; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 5, 0, 0, 0);");
+        statCard.setStyle("-fx-background-color: white; -fx-background-radius: 15; -fx-effect: dropshadow(gaussian, " + cardShadowColor + ", 10, 0, 0, 5); -fx-border-color: " + cardShadowColor + "; -fx-border-radius: 15; -fx-border-width: 1;");
         
-        // İkon yerine renkli kutu
-        HBox colorBox = new HBox();
-        colorBox.setPrefSize(24, 24);
-        colorBox.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 5;");
+        // Gradient renkli üst bar
+        HBox colorBar = new HBox();
+        colorBar.setPrefHeight(4);
+        colorBar.setMaxHeight(4);
+        colorBar.setStyle("-fx-background: " + color + "; -fx-background-radius: 15 15 0 0;");
         
-        // Değer
+        // İkon ve değer alanı
+        VBox contentArea = new VBox(15);
+        contentArea.setAlignment(Pos.CENTER);
+        contentArea.setPadding(new Insets(20, 20, 20, 20));
+        
+        // Değer - daha büyük ve vurgulu
         Label valueLabel = new Label(value);
-        valueLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 26));
-        valueLabel.setTextFill(Color.web("#2d3436"));
+        valueLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 32));
+        valueLabel.setTextFill(Color.web(textPrimaryColor));
         
-        // Başlık
+        // Başlık - daha küçük ve subtle
         Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
-        titleLabel.setTextFill(Color.web("#636e72"));
+        titleLabel.setFont(Font.font("Segoe UI", FontWeight.MEDIUM, 12));
+        titleLabel.setTextFill(Color.web(textSecondaryColor));
+        titleLabel.setWrapText(true);
         
-        statCard.getChildren().addAll(colorBox, valueLabel, titleLabel);
+        contentArea.getChildren().addAll(valueLabel, titleLabel);
+        statCard.getChildren().addAll(colorBar, contentArea);
         
         return statCard;
     }
@@ -1241,5 +1276,15 @@ public class SuperadminDashboardFX {
             }
         }
         return null;
+    }
+    
+    /**
+     * Sistem saatini günceller
+     */
+    private void updateTimeLabel(Label timeLabel) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm:ss", Locale.forLanguageTag("tr-TR"));
+        String timeText = "🕒 " + now.format(formatter);
+        timeLabel.setText(timeText);
     }
 }
