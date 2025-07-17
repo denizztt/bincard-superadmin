@@ -124,14 +124,8 @@ public class BusesPage extends SuperadminPageBase {
         
         table.getColumns().addAll(idColumn, plateColumn, modelColumn, capacityColumn, statusColumn);
         
-        // Örnek veriler
-        table.getItems().addAll(
-            new Bus("1", "34 ABC 123", "Mercedes Citaro", 80, "Aktif"),
-            new Bus("2", "34 DEF 456", "MAN Lion's City", 70, "Aktif"),
-            new Bus("3", "34 GHI 789", "Otokar Kent", 60, "Bakımda"),
-            new Bus("4", "34 JKL 012", "Temsa Avenue", 75, "Aktif"),
-            new Bus("5", "34 MNO 345", "BMC Procity", 65, "Arızalı")
-        );
+        // Gerçek veriler API'den yüklenecek
+        // TODO: API'den otobüs verilerini yükle
         
         return table;
     }
