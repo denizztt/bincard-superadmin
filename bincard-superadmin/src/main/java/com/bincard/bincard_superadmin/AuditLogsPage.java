@@ -51,7 +51,7 @@ public class AuditLogsPage extends SuperadminPageBase {
     private VBox createMainContent() {
         VBox content = new VBox(20);
         content.setPadding(new Insets(30));
-        content.setStyle("-fx-background-color: #f8f9fa;");
+        content.setStyle("-fx-background-color: #F8FAFC;");
         
         // Başlık ve filtreler
         VBox titleAndFilters = createTitleAndFilters();
@@ -89,7 +89,7 @@ public class AuditLogsPage extends SuperadminPageBase {
         
         // Yenile butonu
         Button refreshButton = new Button("Yenile");
-        refreshButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; " +
+        refreshButton.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; " +
                               "-fx-font-weight: bold; -fx-padding: 10 20; -fx-background-radius: 5;");
         refreshButton.setOnAction(e -> loadAuditLogs());
         
@@ -203,13 +203,13 @@ public class AuditLogsPage extends SuperadminPageBase {
         
         // Filtre butonu
         Button filterButton = new Button("Filtrele");
-        filterButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white; " +
+        filterButton.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; " +
                              "-fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 5;");
         filterButton.setOnAction(e -> loadAuditLogs());
         
         // Temizle butonu
         Button clearButton = new Button("Temizle");
-        clearButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; " +
+        clearButton.setStyle("-fx-background-color: #64748B; -fx-text-fill: white; " +
                             "-fx-font-weight: bold; -fx-padding: 8 15; -fx-background-radius: 5;");
         clearButton.setOnAction(e -> {
             fromDatePicker.setValue(LocalDate.now().minusDays(30));

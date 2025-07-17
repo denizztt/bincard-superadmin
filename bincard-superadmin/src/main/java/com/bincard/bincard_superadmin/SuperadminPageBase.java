@@ -24,13 +24,13 @@ import org.kordamp.ikonli.javafx.FontIcon;
  */
 public abstract class SuperadminPageBase {
     // Mobil uygulama ile uyumlu renk paleti
-    protected static final String PRIMARY_COLOR = "#3F51B5"; // Indigo
-    protected static final String ACCENT_COLOR = "#5C6BC0"; // Light Indigo
-    protected static final String SECONDARY_COLOR = "#9FA8DA"; // Even lighter Indigo
-    protected static final String BACKGROUND_COLOR = "#F8F9FA"; // Very light gray with blue hint
-    protected static final String CARD_SHADOW_COLOR = "#E0E0E0"; // Light gray
-    protected static final String TEXT_PRIMARY_COLOR = "#212121"; // Very dark gray
-    protected static final String TEXT_SECONDARY_COLOR = "#757575"; // Medium gray
+    protected static final String PRIMARY_COLOR = "#1E293B"; // Sidebar - Göz yormayan koyu gri-mavi
+    protected static final String ACCENT_COLOR = "#2563EB"; // Aktif menü - Vurgulu mavi
+    protected static final String SECONDARY_COLOR = "#64748B"; // Açıklama yazısı - Açık koyu gri
+    protected static final String BACKGROUND_COLOR = "#F8FAFC"; // Arka plan - Çok açık gri
+    protected static final String CARD_SHADOW_COLOR = "#E2E8F0"; // Açık gri - Kart gölgesi
+    protected static final String TEXT_PRIMARY_COLOR = "#0F172A"; // Başlık yazısı - Güçlü koyu metin
+    protected static final String TEXT_SECONDARY_COLOR = "#64748B"; // Açıklama yazısı - Açık koyu gri
     
     protected Stage stage;
     protected TokenDTO accessToken;
@@ -129,7 +129,7 @@ public abstract class SuperadminPageBase {
         userInfo.setTextFill(Color.WHITE);
         
         Button logoutButton = new Button("Çıkış Yap");
-        logoutButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;");
+        logoutButton.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;");
         logoutButton.setOnAction(e -> logout());
         
         rightSide.getChildren().addAll(userInfo, logoutButton);

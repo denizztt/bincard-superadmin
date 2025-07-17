@@ -38,7 +38,7 @@ public class SuperadminSignupFX {
         // Ana container
         VBox mainContainer = new VBox(20);
         mainContainer.setAlignment(Pos.CENTER);
-        mainContainer.setStyle("-fx-background-color: linear-gradient(to bottom right, #1F1C2C 0%, #928DAB 100%);");
+        mainContainer.setStyle("-fx-background-color: linear-gradient(to bottom right, #F8F9FA 0%, #E9ECEF 100%);");
         mainContainer.setPadding(new Insets(40));
 
         // Kart container
@@ -52,7 +52,7 @@ public class SuperadminSignupFX {
         // Başlık
         Label title = new Label("Superadmin Kayıt");
         title.setFont(Font.font("Montserrat", FontWeight.BOLD, 32));
-        title.setTextFill(Color.web("#4e54c8"));
+        title.setTextFill(Color.web("#495057"));
         title.setAlignment(Pos.CENTER);
         
         // Form grid
@@ -67,7 +67,7 @@ public class SuperadminSignupFX {
         nameLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         nameField = new TextField();
         nameField.setPromptText("Adınızı giriniz");
-        nameField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #4e54c8; -fx-border-width: 1;");
+        nameField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #6C757D; -fx-border-width: 1;");
         nameField.setPrefHeight(40);
         
         // Soyad alanı
@@ -75,7 +75,7 @@ public class SuperadminSignupFX {
         surnameLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         surnameField = new TextField();
         surnameField.setPromptText("Soyadınızı giriniz");
-        surnameField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #4e54c8; -fx-border-width: 1;");
+        surnameField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #6C757D; -fx-border-width: 1;");
         surnameField.setPrefHeight(40);
         
         // Telefon alanı
@@ -83,7 +83,7 @@ public class SuperadminSignupFX {
         phoneLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         phoneField = new TextField();
         phoneField.setPromptText("Telefon numaranızı giriniz");
-        phoneField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #4e54c8; -fx-border-width: 1;");
+        phoneField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #6C757D; -fx-border-width: 1;");
         phoneField.setPrefHeight(40);
         
         // E-posta alanı
@@ -91,7 +91,7 @@ public class SuperadminSignupFX {
         emailLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         emailField = new TextField();
         emailField.setPromptText("E-posta adresinizi giriniz");
-        emailField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #4e54c8; -fx-border-width: 1;");
+        emailField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #6C757D; -fx-border-width: 1;");
         emailField.setPrefHeight(40);
         
         // Şifre alanı
@@ -99,7 +99,7 @@ public class SuperadminSignupFX {
         passwordLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         passwordField = new PasswordField();
         passwordField.setPromptText("Şifrenizi giriniz");
-        passwordField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #4e54c8; -fx-border-width: 1;");
+        passwordField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #6C757D; -fx-border-width: 1;");
         passwordField.setPrefHeight(40);
         
         // Şifre tekrar alanı
@@ -107,7 +107,7 @@ public class SuperadminSignupFX {
         confirmPasswordLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
         confirmPasswordField = new PasswordField();
         confirmPasswordField.setPromptText("Şifrenizi tekrar giriniz");
-        confirmPasswordField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #4e54c8; -fx-border-width: 1;");
+        confirmPasswordField.setStyle("-fx-font-size: 16; -fx-padding: 10; -fx-background-radius: 5; -fx-border-radius: 5; -fx-border-color: #6C757D; -fx-border-width: 1;");
         confirmPasswordField.setPrefHeight(40);
         
         // Grid'e form elemanlarını ekle
@@ -127,11 +127,11 @@ public class SuperadminSignupFX {
         // Kayıt ol butonu
         signupButton = new Button("Kayıt Ol");
         signupButton.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        signupButton.setStyle("-fx-background-color: #8e2de2; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
+        signupButton.setStyle("-fx-background-color: #495057; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
         signupButton.setPrefHeight(50);
         signupButton.setMaxWidth(Double.MAX_VALUE);
-        signupButton.setOnMouseEntered(e -> signupButton.setStyle("-fx-background-color: #7A1DC1; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
-        signupButton.setOnMouseExited(e -> signupButton.setStyle("-fx-background-color: #8e2de2; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        signupButton.setOnMouseEntered(e -> signupButton.setStyle("-fx-background-color: #343A40; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        signupButton.setOnMouseExited(e -> signupButton.setStyle("-fx-background-color: #495057; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
         
         // Sonuç alanı
         resultArea = new TextArea();
@@ -144,10 +144,10 @@ public class SuperadminSignupFX {
         // Geri dön butonu
         backButton = new Button("← Ana Menü");
         backButton.setFont(Font.font("Montserrat", FontWeight.BOLD, 16));
-        backButton.setStyle("-fx-background-color: #4e54c8; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
+        backButton.setStyle("-fx-background-color: #6C757D; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
         backButton.setPrefHeight(40);
-        backButton.setOnMouseEntered(e -> backButton.setStyle("-fx-background-color: #3F3D8F; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
-        backButton.setOnMouseExited(e -> backButton.setStyle("-fx-background-color: #4e54c8; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        backButton.setOnMouseEntered(e -> backButton.setStyle("-fx-background-color: #5A6268; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        backButton.setOnMouseExited(e -> backButton.setStyle("-fx-background-color: #6C757D; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
         
         // Event handlers
         signupButton.setOnAction(e -> handleSignup());

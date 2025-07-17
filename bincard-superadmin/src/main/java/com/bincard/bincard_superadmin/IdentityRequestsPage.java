@@ -83,15 +83,15 @@ public class IdentityRequestsPage extends SuperadminPageBase {
         statsBox.setAlignment(Pos.CENTER);
         
         // Toplam
-        VBox totalCard = createStatsCard("Toplam İstekler", "0", "#3498db", FontAwesomeSolid.CLIPBOARD_LIST);
+        VBox totalCard = createStatsCard("Toplam İstekler", "0", "#6C757D", FontAwesomeSolid.CLIPBOARD_LIST);
         totalCountLabel = (Label) ((VBox) totalCard.getChildren().get(1)).getChildren().get(0);
         
         // Bekleyen
-        VBox pendingCard = createStatsCard("Bekleyen", "0", "#f39c12", FontAwesomeSolid.CLOCK);
+        VBox pendingCard = createStatsCard("Bekleyen", "0", "#868E96", FontAwesomeSolid.CLOCK);
         pendingCountLabel = (Label) ((VBox) pendingCard.getChildren().get(1)).getChildren().get(0);
         
         // Onaylanan
-        VBox approvedCard = createStatsCard("Onaylanan", "0", "#27ae60", FontAwesomeSolid.CHECK_CIRCLE);
+        VBox approvedCard = createStatsCard("Onaylanan", "0", "#495057", FontAwesomeSolid.CHECK_CIRCLE);
         approvedCountLabel = (Label) ((VBox) approvedCard.getChildren().get(1)).getChildren().get(0);
         
         // Reddedilen

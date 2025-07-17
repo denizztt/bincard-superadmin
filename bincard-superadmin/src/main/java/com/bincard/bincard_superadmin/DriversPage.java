@@ -78,7 +78,7 @@ public class DriversPage extends SuperadminPageBase {
         searchField.setStyle("-fx-font-size: 14px;");
 
         Button searchButton = new Button("Ara");
-        searchButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+        searchButton.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white;");
 
         // Filtreler
         Label filterLabel = new Label("Filtrele:");
@@ -91,7 +91,7 @@ public class DriversPage extends SuperadminPageBase {
 
         // Yenile butonu
         Button refreshButton = new Button("Yenile");
-        refreshButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white;");
+        refreshButton.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white;");
 
         HBox spacer = new HBox();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -143,11 +143,11 @@ public class DriversPage extends SuperadminPageBase {
         controls.setAlignment(Pos.CENTER_RIGHT);
 
         Button addButton = new Button("Yeni Şoför Ekle");
-        addButton.setStyle("-fx-background-color: #2ecc71; -fx-text-fill: white;");
+        addButton.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white;");
         addButton.setOnAction(e -> showAddDriverDialog());
 
         Button editButton = new Button("Düzenle");
-        editButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
+        editButton.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white;");
         editButton.setOnAction(e -> {
             Driver selectedDriver = table.getSelectionModel().getSelectedItem();
             if (selectedDriver != null) {
@@ -158,7 +158,7 @@ public class DriversPage extends SuperadminPageBase {
         });
 
         Button deleteButton = new Button("Sil");
-        deleteButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white;");
+        deleteButton.setStyle("-fx-background-color: #64748B; -fx-text-fill: white;");
         deleteButton.setOnAction(e -> {
             Driver selectedDriver = table.getSelectionModel().getSelectedItem();
             if (selectedDriver != null) {

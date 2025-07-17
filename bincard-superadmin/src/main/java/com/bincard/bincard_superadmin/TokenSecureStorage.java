@@ -12,6 +12,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Base64;
 import java.util.Properties;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -219,6 +221,64 @@ public class TokenSecureStorage {
         cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
         byte[] plainText = cipher.doFinal(Base64.getDecoder().decode(cipherText));
         return new String(plainText);
+    }
+    
+    /**
+     * Access token'ın süresi dolmuş mu kontrol eder
+     * 
+     * @return true eğer access token süresi dolmuşsa, false aksi halde
+     * @throws Exception Token okuma sırasında hata oluşursa
+     */
+    public static boolean isAccessTokenExpired() throws Exception {
+        TokenPair tokens = retrieveTokens();
+        if (tokens == null || tokens.getAccessExpiry() == null) {
+            return true;
+        }
+        
+        LocalDateTime expiry = LocalDateTime.parse(tokens.getAccessExpiry());
+        return LocalDateTime.now().isAfter(expiry);
+    }
+    
+    /**
+     * Refresh token'ın süresi dolmuş mu kontrol eder
+     * 
+     * @return true eğer refresh token süresi dolmuşsa, false aksi halde
+     * @throws Exception Token okuma sırasında hata oluşursa
+     */
+    public static boolean isRefreshTokenExpired() throws Exception {
+        TokenPair tokens = retrieveTokens();
+        if (tokens == null || tokens.getRefreshExpiry() == null) {
+            return true;
+        }
+        
+        LocalDateTime expiry = LocalDateTime.parse(tokens.getRefreshExpiry());
+        return LocalDateTime.now().isAfter(expiry);
+    }
+    
+    /**
+     * Access token'ı yeniler ve günceller
+     * 
+     * @param newAccessToken Yeni access token
+     * @throws Exception Token güncelleme sırasında hata oluşursa
+     */
+    public static void updateAccessToken(TokenDTO newAccessToken) throws Exception {
+        TokenPair currentTokens = retrieveTokens();
+        if (currentTokens == null) {
+            throw new Exception("Mevcut token'lar bulunamadı");
+        }
+        
+        // Refresh token'ı mevcut bilgilerle oluştur
+        TokenDTO refreshTokenDTO = new TokenDTO(
+            currentTokens.getRefreshToken(),
+            null, // issuedAt
+            LocalDateTime.parse(currentTokens.getRefreshExpiry()),
+            null, // lastUsedAt
+            null, // ipAddress
+            null, // deviceInfo
+            TokenType.REFRESH
+        );
+        
+        storeTokens(newAccessToken, refreshTokenDTO);
     }
     
     /**

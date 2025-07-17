@@ -37,13 +37,13 @@ import javafx.scene.Scene;
 public class PaymentPointsTablePage extends SuperadminPageBase {
     
     // Mobil uygulama ile uyumlu renk paleti
-    private static final String PRIMARY_COLOR = "#3F51B5"; // Indigo
-    private static final String ACCENT_COLOR = "#5C6BC0"; // Light Indigo
-    private static final String SECONDARY_COLOR = "#9FA8DA"; // Even lighter Indigo
-    private static final String BACKGROUND_COLOR = "#F8F9FA"; // Very light gray with blue hint
-    private static final String CARD_SHADOW_COLOR = "#E0E0E0"; // Light gray
-    private static final String TEXT_PRIMARY_COLOR = "#212121"; // Very dark gray
-    private static final String TEXT_SECONDARY_COLOR = "#757575"; // Medium gray
+    private static final String PRIMARY_COLOR = "#6C757D"; // Gray
+    private static final String ACCENT_COLOR = "#495057"; // Dark Gray
+    private static final String SECONDARY_COLOR = "#ADB5BD"; // Light Gray
+    private static final String BACKGROUND_COLOR = "#FFFFFF"; // White
+    private static final String CARD_SHADOW_COLOR = "#E9ECEF"; // Very light gray
+    private static final String TEXT_PRIMARY_COLOR = "#212529"; // Very dark gray
+    private static final String TEXT_SECONDARY_COLOR = "#6C757D"; // Medium gray
 
     // paymentPointsList erişimini public yap
     public List<PaymentPoint> paymentPointsList;

@@ -18,6 +18,150 @@ public class ApiClientFX {
     private static final String BASE_URL = "http://localhost:8080/v1/api";
 
     // =================================================================
+    // TOKEN MANAGEMENT METHODS
+    // =================================================================
+    
+    /**
+     * Refresh token kullanarak yeni access token alır
+     */
+    public static TokenResponse refreshAccessToken(String refreshToken) throws IOException {
+        System.out.println("🔄 refreshAccessToken çağrıldı");
+        
+        try {
+            String endpoint = BASE_URL + "/auth/refresh";
+            URI uri = new URI(endpoint);
+            URL url = uri.toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            
+            try {
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Authorization", "Bearer " + refreshToken);
+                connection.setDoOutput(true);
+                
+                String requestBody = "{}";
+                try (OutputStream os = connection.getOutputStream()) {
+                    byte[] input = requestBody.getBytes("utf-8");
+                    os.write(input, 0, input.length);
+                }
+                
+                int responseCode = connection.getResponseCode();
+                System.out.println("   - Response Code: " + responseCode);
+                
+                if (responseCode == 200) {
+                    try (InputStream is = connection.getInputStream();
+                         BufferedReader reader = new BufferedReader(new InputStreamReader(is, "utf-8"))) {
+                        
+                        StringBuilder response = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            response.append(line);
+                        }
+                        
+                        String jsonResponse = response.toString();
+                        System.out.println("   - Response: " + jsonResponse);
+                        
+                        // Token response parsing (basit bir parsing)
+                        return parseTokenResponse(jsonResponse);
+                    }
+                } else {
+                    throw new IOException("Token yenilenemiyor: " + responseCode);
+                }
+                
+            } finally {
+                connection.disconnect();
+            }
+        } catch (Exception e) {
+            throw new IOException("Token yenileme hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * JSON response'u TokenResponse objesine parse eder
+     */
+    private static TokenResponse parseTokenResponse(String jsonResponse) {
+        // Basit JSON parsing (gerçek projede Jackson/Gson kullanın)
+        try {
+            // AccessToken parsing
+            String accessTokenStr = extractJsonValue(jsonResponse, "accessToken");
+            String refreshTokenStr = extractJsonValue(jsonResponse, "refreshToken");
+            
+            if (accessTokenStr == null || refreshTokenStr == null) {
+                throw new RuntimeException("Token bilgileri eksik");
+            }
+            
+            // Token objelerini oluştur
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime accessExpiry = now.plusMinutes(15); // 15 dakika
+            LocalDateTime refreshExpiry = now.plusDays(7); // 1 hafta
+            
+            TokenDTO accessToken = new TokenDTO(
+                accessTokenStr, now, accessExpiry, now, null, null, TokenType.ACCESS
+            );
+            
+            TokenDTO refreshToken = new TokenDTO(
+                refreshTokenStr, now, refreshExpiry, now, null, null, TokenType.REFRESH
+            );
+            
+            return new TokenResponse(accessToken, refreshToken);
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Token parsing hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * JSON string'den value extract eder
+     */
+    private static String extractJsonValue(String json, String key) {
+        String searchKey = "\"" + key + "\":\"";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) return null;
+        
+        startIndex += searchKey.length();
+        int endIndex = json.indexOf("\"", startIndex);
+        if (endIndex == -1) return null;
+        
+        return json.substring(startIndex, endIndex);
+    }
+    
+    /**
+     * Token süresini kontrol eder ve gerekirse yeniler
+     */
+    public static String ensureValidAccessToken() {
+        try {
+            if (TokenSecureStorage.isAccessTokenExpired()) {
+                System.out.println("🔄 Access token süresi dolmuş, yenileniyor...");
+                
+                if (TokenSecureStorage.isRefreshTokenExpired()) {
+                    System.out.println("❌ Refresh token da süresi dolmuş, yeniden giriş gerekli");
+                    return null;
+                }
+                
+                TokenSecureStorage.TokenPair tokens = TokenSecureStorage.retrieveTokens();
+                if (tokens == null) {
+                    System.out.println("❌ Token'lar bulunamadı");
+                    return null;
+                }
+                
+                TokenResponse newTokens = refreshAccessToken(tokens.getRefreshToken());
+                TokenSecureStorage.updateAccessToken(newTokens.getAccessToken());
+                
+                System.out.println("✅ Access token başarıyla yenilendi");
+                return newTokens.getAccessToken().getToken();
+                
+            } else {
+                TokenSecureStorage.TokenPair tokens = TokenSecureStorage.retrieveTokens();
+                return tokens != null ? tokens.getAccessToken() : null;
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ Token yenileme hatası: " + e.getMessage());
+            return null;
+        }
+    }
+
+    // =================================================================
     // UTILITY METHODS
     // =================================================================
     

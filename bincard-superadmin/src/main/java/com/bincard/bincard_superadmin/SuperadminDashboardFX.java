@@ -1,5 +1,8 @@
 package com.bincard.bincard_superadmin;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -18,6 +21,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import javafx.application.HostServices;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,21 +42,21 @@ public class SuperadminDashboardFX {
     private HostServices hostServices;
     private List<MenuItem> menuItems = new ArrayList<>();
     
-    // Mobil uygulama ile uyumlu modern renk paleti
-    private final String primaryColor = "#3F51B5"; // Indigo - Ana renk
-    private final String accentColor = "#5C6BC0"; // Light Indigo - Vurgu rengi
-    private final String secondaryColor = "#9FA8DA"; // Even lighter Indigo - İkincil renk
-    private final String backgroundColor = "#F8F9FA"; // Very light gray with blue hint - Arkaplan
-    private final String cardShadowColor = "#E0E0E0"; // Light gray - Kart gölgesi
-    private final String textPrimaryColor = "#212121"; // Very dark gray - Ana metin
-    private final String textSecondaryColor = "#757575"; // Medium gray - İkincil metin
+    // Modern mavi-gri-beyaz renk paleti
+    private final String primaryColor = "#1E293B"; // Sidebar - Göz yormayan koyu gri-mavi
+    private final String accentColor = "#2563EB"; // Aktif menü - Vurgulu mavi
+    private final String secondaryColor = "#64748B"; // Açıklama yazısı - Açık koyu gri
+    private final String backgroundColor = "#F8FAFC"; // Arka plan - Çok açık gri
+    private final String cardShadowColor = "#E2E8F0"; // Açık gri - Kart gölgesi
+    private final String textPrimaryColor = "#0F172A"; // Başlık yazısı - Güçlü koyu metin
+    private final String textSecondaryColor = "#64748B"; // Açıklama yazısı - Açık koyu gri
     
     // Sidebar gradient için değiştirilmiş ana renk
-    private final String mainColor = "linear-gradient(to bottom, " + primaryColor + " 0%, " + accentColor + " 100%)"; // Indigo gradient - Sidebar için
-    private final String accentColor1 = secondaryColor; // Light Indigo tonu
-    private final String accentColor2 = accentColor; // Light Indigo
-    private final String accentColor3 = primaryColor; // Ana Indigo
-    private final String accentColor4 = "#7986CB"; // Medium Indigo tonu
+    private final String mainColor = "linear-gradient(to bottom, " + primaryColor + " 0%, #334155 100%)"; // Koyu gri-mavi gradient - Sidebar için
+    private final String accentColor1 = secondaryColor; // Açık koyu gri tonu
+    private final String accentColor2 = accentColor; // Vurgulu mavi
+    private final String accentColor3 = primaryColor; // Koyu gri-mavi
+    private final String accentColor4 = "#475569"; // Medium gri-mavi tonu
     
     // Alt menülerin görünürlük durumları
     private Map<String, VBox> subMenuContainers = new HashMap<>();
@@ -77,8 +81,6 @@ public class SuperadminDashboardFX {
         MenuItem newsMenu = new MenuItem("Haberler", accentColor3, FontAwesomeSolid.NEWSPAPER);
         newsMenu.addSubItem(new MenuItem("Haber Ekle", accentColor3, FontAwesomeSolid.PLUS_CIRCLE, "NewsAdd"));
         newsMenu.addSubItem(new MenuItem("Haberleri Görüntüle", accentColor3, FontAwesomeSolid.LIST, "NewsList"));
-        newsMenu.addSubItem(new MenuItem("Haber Düzenle", accentColor3, FontAwesomeSolid.EDIT, "NewsEdit"));
-        newsMenu.addSubItem(new MenuItem("Haber Sil", accentColor3, FontAwesomeSolid.TRASH_ALT, "NewsDelete"));
         
         // İstatistikler
         MenuItem stats = new MenuItem("İstatistikler", accentColor3, FontAwesomeSolid.CHART_BAR, "Statistics");
@@ -158,6 +160,9 @@ public class SuperadminDashboardFX {
         // Menü yapısını başlat
         initializeMenuItems();
         
+        // Token kontrolü timer'ı başlat
+        startTokenExpiryCheck();
+        
         try {
             createUI();
         } catch (Exception e) {
@@ -166,6 +171,57 @@ public class SuperadminDashboardFX {
             
             // Hata durumunda basit bir UI göster
             showErrorUI("Dashboard yüklenirken bir hata oluştu: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Token süresini kontrol eden timer başlatır
+     */
+    private void startTokenExpiryCheck() {
+        Timeline tokenCheckTimeline = new Timeline(new KeyFrame(Duration.minutes(1), e -> {
+            try {
+                // Token süresini kontrol et
+                if (TokenSecureStorage.isAccessTokenExpired()) {
+                    System.out.println("🔄 Access token süresi dolmuş, yenileniyor...");
+                    
+                    // Yeni token al
+                    String newAccessTokenStr = ApiClientFX.ensureValidAccessToken();
+                    
+                    if (newAccessTokenStr != null) {
+                        // Access token'ı güncelle
+                        this.accessToken.setToken(newAccessTokenStr);
+                        System.out.println("✅ Token başarıyla yenilendi");
+                    } else {
+                        // Token yenilenemedi, giriş ekranına yönlendir
+                        System.out.println("❌ Token yenilenemedi, giriş ekranına yönlendiriliyor");
+                        Platform.runLater(() -> {
+                            showLogoutAlert("Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.");
+                        });
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("Token kontrol hatası: " + ex.getMessage());
+            }
+        }));
+        tokenCheckTimeline.setCycleCount(Timeline.INDEFINITE);
+        tokenCheckTimeline.play();
+    }
+    
+    /**
+     * Kullanıcıyı çıkış yapması için uyarır
+     */
+    private void showLogoutAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Oturum Süresi Doldu");
+        alert.setHeaderText("Güvenlik Uyarısı");
+        alert.setContentText(message);
+        alert.showAndWait();
+        
+        // Giriş ekranına dön
+        try {
+            new SuperadminLoginFX(stage);
+        } catch (Exception e) {
+            System.err.println("Giriş ekranına dönerken hata: " + e.getMessage());
         }
     }
     
@@ -487,7 +543,7 @@ public class SuperadminDashboardFX {
                 // Alt menü container'ını HashMap'e ekle (daha sonra erişim için)
                 subMenuContainers.put(menuItem.getTitle(), subMenuBox);
             } else {
-                // Alt menüsü yoksa doğrudan ana menüye tıklama olayı ekle
+                // Alt menüsü yoksa doğrudan ana menüye tıklma olayı ekle
                 mainMenuItem.setOnMouseClicked(e -> navigateToSection(menuItem.getTargetPage()));
             }
             
@@ -604,7 +660,7 @@ public class SuperadminDashboardFX {
         VBox content = new VBox(30);
         content.setAlignment(Pos.CENTER);
         content.setPadding(new Insets(50));
-        content.setStyle("-fx-background-color: linear-gradient(to bottom, " + primaryColor + " 0%, " + accentColor + " 100%);");
+        content.setStyle("-fx-background-color: #FFFFFF;"); // Kart arka plan - Açık arka plan
         
         // Kullanıcı adını al (basit bir çözüm)
         String userDisplayName = "Yönetici";
@@ -612,22 +668,22 @@ public class SuperadminDashboardFX {
         // Hoşgeldiniz başlığı
         Label welcomeTitle = new Label("Merhaba " + userDisplayName + " 👋");
         welcomeTitle.setFont(Font.font("Montserrat", FontWeight.BOLD, 36));
-        welcomeTitle.setTextFill(Color.WHITE);
+        welcomeTitle.setTextFill(Color.web(textPrimaryColor));
         
         // Alt başlık
         Label subtitle = new Label("Bincard Superadmin Panel'e Hoşgeldiniz");
         subtitle.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 20));
-        subtitle.setTextFill(Color.web("#f8f9fa"));
+        subtitle.setTextFill(Color.web(textSecondaryColor));
         
         // Açıklama metni
         Label description = new Label("Sistem yönetimi ve analiz işlemleri için tasarlanmış kontrol paneli");
         description.setFont(Font.font("Segoe UI", FontWeight.LIGHT, 16));
-        description.setTextFill(Color.web("#e9ecef"));
+        description.setTextFill(Color.web(textSecondaryColor));
         
         // Sistem saati - Anlık güncellenen
         Label timeLabel = new Label();
         timeLabel.setFont(Font.font("Segoe UI", FontWeight.MEDIUM, 18));
-        timeLabel.setTextFill(Color.WHITE);
+        timeLabel.setTextFill(Color.web(textPrimaryColor));
         
         // Saati güncelle
         updateTimeLabel(timeLabel);
@@ -832,16 +888,10 @@ public class SuperadminDashboardFX {
                     
                 // Haber alt sayfaları
                 case "NewsAdd":
-                    showUnderConstructionAlert("Haber Ekle");
+                    new NewsPage(stage, accessToken, refreshToken, hostServices);
                     break;
                 case "NewsList":
                     new NewsPage(stage, accessToken, refreshToken, hostServices);
-                    break;
-                case "NewsEdit":
-                    showUnderConstructionAlert("Haber Düzenle");
-                    break;
-                case "NewsDelete":
-                    showUnderConstructionAlert("Haber Sil");
                     break;
                     
                 // Rota alt sayfaları

@@ -271,7 +271,7 @@ public class StatisticsPage extends SuperadminPageBase {
                     // Sunucu zamanı
                     updateTimeFromJson(dataSection, "serverTime", serverTimeLabel);
                     
-                    showSuccess("Cüzdan istatistikleri başarıyla güncellendi.");
+                    // İstatistikler güncellendi
                 } else {
                     showError("API yanıtı beklenmeyen formatta.");
                 }

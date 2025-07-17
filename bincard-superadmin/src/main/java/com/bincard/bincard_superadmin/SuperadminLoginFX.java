@@ -57,7 +57,7 @@ public class SuperadminLoginFX {
         // Ana container
         VBox mainContainer = new VBox(20);
         mainContainer.setAlignment(Pos.CENTER);
-        mainContainer.setStyle("-fx-background-color: linear-gradient(to bottom right, #1F1C2C 0%, #928DAB 100%);");
+        mainContainer.setStyle("-fx-background-color: linear-gradient(to bottom right, #6A4C93 0%, #A8A8A8 100%);");
         mainContainer.setPadding(new Insets(40));
 
         // Merhaba ve saat üstte
@@ -87,7 +87,7 @@ public class SuperadminLoginFX {
         // Başlık
         Label title = new Label("Superadmin Girişi");
         title.setFont(Font.font("Montserrat", FontWeight.BOLD, 32));
-        title.setTextFill(Color.web("#4e54c8"));
+        title.setTextFill(Color.web("#6A4C93"));
         title.setAlignment(Pos.CENTER);
 
         // Telefon alanı
@@ -140,7 +140,7 @@ public class SuperadminLoginFX {
         // Telefon numarası alanı
         phoneField = new TextField();
         phoneField.setPromptText("(5xx) xxx xx xx");
-        phoneField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #3498db; -fx-border-width: 2;");
+        phoneField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #6A4C93; -fx-border-width: 2;");
         phoneField.setPrefHeight(45);
         phoneField.setPrefWidth(200);
 
@@ -183,7 +183,7 @@ public class SuperadminLoginFX {
         
         passwordField = new PasswordField();
         passwordField.setPromptText("6 haneli şifre giriniz");
-        passwordField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #3498db; -fx-border-width: 2;");
+        passwordField.setStyle("-fx-font-size: 16; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #6A4C93; -fx-border-width: 2;");
         passwordField.setPrefHeight(45);
         
         // Sadece sayı girişine izin ver ve maksimum 6 hane ile sınırla
@@ -218,7 +218,7 @@ public class SuperadminLoginFX {
 
         verificationCodeField = new TextField();
         verificationCodeField.setPromptText("6 haneli kod");
-        verificationCodeField.setStyle("-fx-font-size: 18; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #27ae60; -fx-border-width: 2; -fx-alignment: center;");
+        verificationCodeField.setStyle("-fx-font-size: 18; -fx-padding: 12; -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: #6A4C93; -fx-border-width: 2; -fx-alignment: center;");
         verificationCodeField.setPrefHeight(45);
         verificationCodeField.setMaxWidth(220);
         verificationCodeField.setAlignment(Pos.CENTER);
@@ -237,11 +237,11 @@ public class SuperadminLoginFX {
         // Yeniden Doğrulama Kodu Gönder butonu (Mavi renkli)
         resendVerificationButton = new Button("Yeniden Doğrulama Kodu Gönder");
         resendVerificationButton.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
-        resendVerificationButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
+        resendVerificationButton.setStyle("-fx-background-color: #9B59B6; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
         resendVerificationButton.setPrefHeight(40);
         resendVerificationButton.setMaxWidth(Double.MAX_VALUE);
-        resendVerificationButton.setOnMouseEntered(e -> resendVerificationButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
-        resendVerificationButton.setOnMouseExited(e -> resendVerificationButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        resendVerificationButton.setOnMouseEntered(e -> resendVerificationButton.setStyle("-fx-background-color: #8E44AD; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        resendVerificationButton.setOnMouseExited(e -> resendVerificationButton.setStyle("-fx-background-color: #9B59B6; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
         
         // Event handler
         resendVerificationButton.setOnAction(e -> handleResendVerificationCode());
@@ -259,22 +259,22 @@ public class SuperadminLoginFX {
         // Giriş butonu
         loginButton = new Button("Giriş Yap");
         loginButton.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        loginButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
+        loginButton.setStyle("-fx-background-color: #6A4C93; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
         loginButton.setPrefHeight(50);
         loginButton.setMaxWidth(Double.MAX_VALUE);
-        loginButton.setOnMouseEntered(e -> loginButton.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
-        loginButton.setOnMouseExited(e -> loginButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        loginButton.setOnMouseEntered(e -> loginButton.setStyle("-fx-background-color: #5D4E75; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        loginButton.setOnMouseExited(e -> loginButton.setStyle("-fx-background-color: #6A4C93; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
 
         // Doğrula butonu (başlangıçta gizli)
         verifyButton = new Button("Doğrula");
         verifyButton.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
-        verifyButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
+        verifyButton.setStyle("-fx-background-color: #9B59B6; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;");
         verifyButton.setPrefHeight(50);
         verifyButton.setMaxWidth(Double.MAX_VALUE);
         verifyButton.setVisible(false);
         verifyButton.setManaged(false);
-        verifyButton.setOnMouseEntered(e -> verifyButton.setStyle("-fx-background-color: #229954; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
-        verifyButton.setOnMouseExited(e -> verifyButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        verifyButton.setOnMouseEntered(e -> verifyButton.setStyle("-fx-background-color: #8E44AD; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
+        verifyButton.setOnMouseExited(e -> verifyButton.setStyle("-fx-background-color: #9B59B6; -fx-text-fill: white; -fx-background-radius: 8; -fx-cursor: hand;"));
 
         // Sonuç alanı - başlangıçta gizli olarak ayarla
         resultArea = new TextArea();
@@ -289,10 +289,10 @@ public class SuperadminLoginFX {
         // Geri dön butonu
         backButton = new Button("← Ana Menü");
         backButton.setFont(Font.font("Montserrat", FontWeight.BOLD, 16));
-        backButton.setStyle("-fx-background-color: #9a8c98; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;");
+        backButton.setStyle("-fx-background-color: #7F8C8D; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;");
         backButton.setPrefHeight(40);
-        backButton.setOnMouseEntered(e -> backButton.setStyle("-fx-background-color: #4a4e69; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;"));
-        backButton.setOnMouseExited(e -> backButton.setStyle("-fx-background-color: #9a8c98; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;"));
+        backButton.setOnMouseEntered(e -> backButton.setStyle("-fx-background-color: #95A5A6; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;"));
+        backButton.setOnMouseExited(e -> backButton.setStyle("-fx-background-color: #7F8C8D; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;"));
 
         // Event handlers
         loginButton.setOnAction(e -> handleLogin());
