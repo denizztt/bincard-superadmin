@@ -148,7 +148,7 @@ public class PaymentPointAddPage extends SuperadminPageBase {
     }
     
     /**
-     * Basit harita HTML'ini yükler
+     * Google Maps API kullanarak harita HTML'ini yükler
      */
     private void loadMapHTML() {
         String mapHTML = """
@@ -156,91 +156,292 @@ public class PaymentPointAddPage extends SuperadminPageBase {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Konum Seçimi</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Ödeme Noktası Konum Seçimi</title>
                 <style>
-                    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-                    #map-container { 
-                        width: 100%; 
-                        height: 300px; 
-                        border: 2px solid #ddd; 
-                        background: #f0f0f0;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        cursor: crosshair;
+                    body, html {
+                        height: 100%;
+                        margin: 0;
+                        padding: 0;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        background: #f8f9fa;
                     }
-                    .coordinates { margin-top: 10px; padding: 10px; background: #e8f5e8; }
-                    .mock-location { 
-                        background: #3498db; 
-                        color: white; 
-                        padding: 20px; 
+                    
+                    #map {
+                        height: 100%;
+                        width: 100%;
+                        border-radius: 8px;
+                    }
+                    
+                    .info-panel {
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        right: 10px;
+                        background: white;
+                        padding: 15px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        z-index: 1000;
+                        display: none;
+                    }
+                    
+                    .coordinate-info {
+                        font-size: 14px;
+                        color: #2c3e50;
+                        margin-bottom: 5px;
+                    }
+                    
+                    .address-info {
+                        font-size: 12px;
+                        color: #7f8c8d;
+                    }
+                    
+                    .search-container {
+                        position: absolute;
+                        top: 10px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        z-index: 1000;
+                    }
+                    
+                    #search-input {
+                        width: 300px;
+                        padding: 10px;
+                        border: 1px solid #ddd;
                         border-radius: 5px;
-                        text-align: center;
+                        font-size: 14px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }
+                    
+                    .controls {
+                        position: absolute;
+                        bottom: 10px;
+                        right: 10px;
+                        z-index: 1000;
+                    }
+                    
+                    .control-btn {
+                        background: #3498db;
+                        color: white;
+                        border: none;
+                        padding: 8px 12px;
+                        margin: 2px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                    }
+                    
+                    .control-btn:hover {
+                        background: #2980b9;
                     }
                 </style>
             </head>
             <body>
-                <div id="map-container" onclick="selectLocation(event)">
-                    <div class="mock-location">
-                        <strong>Harita Simülasyonu</strong><br>
-                        Tıklayarak konum seçin
-                    </div>
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Adres veya yer ara (ör: İstanbul Üniversitesi)">
                 </div>
                 
-                <div id="coordinates" class="coordinates" style="display: none;">
-                    <strong>Seçilen Konum:</strong><br>
-                    <span id="lat-lng"></span><br>
-                    <span id="address"></span>
+                <div id="coordinates" class="info-panel">
+                    <div id="lat-lng" class="coordinate-info"></div>
+                    <div id="address" class="address-info"></div>
+                </div>
+                
+                <div id="map"></div>
+                
+                <div class="controls">
+                    <button class="control-btn" onclick="getCurrentLocation()">Konumum</button>
+                    <button class="control-btn" onclick="clearSelection()">Temizle</button>
                 </div>
                 
                 <script>
-                    var selectedLocation = null;
+                    let map;
+                    let selectedMarker;
+                    let selectedLocation = null;
+                    let geocoder;
+                    let autocomplete;
                     
-                    function selectLocation(event) {
-                        // Basit koordinat simülasyonu (İstanbul civarı)
-                        var rect = event.target.getBoundingClientRect();
-                        var x = event.clientX - rect.left;
-                        var y = event.clientY - rect.top;
+                    // Google Maps API'sını başlat
+                    function initMap() {
+                        // İstanbul merkezli harita
+                        const istanbul = { lat: 41.0082, lng: 28.9784 };
                         
-                        // Mock koordinatlar (İstanbul)
-                        var lat = 41.0082 + (Math.random() - 0.5) * 0.1;
-                        var lng = 28.9784 + (Math.random() - 0.5) * 0.1;
+                        map = new google.maps.Map(document.getElementById("map"), {
+                            zoom: 11,
+                            center: istanbul,
+                            mapTypeControl: true,
+                            mapTypeControlOptions: {
+                                style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+                                mapTypeIds: ["roadmap", "terrain", "satellite", "hybrid"]
+                            },
+                            streetViewControl: true,
+                            fullscreenControl: true,
+                            zoomControl: true
+                        });
                         
-                        selectedLocation = {lat: lat, lng: lng};
+                        geocoder = new google.maps.Geocoder();
                         
-                        // Mock adres bilgileri
-                        var mockAddresses = [
-                            {street: "Atatürk Caddesi No: 123", district: "Beyoğlu", city: "İstanbul", postalCode: "34433"},
-                            {street: "İstiklal Caddesi No: 45", district: "Beyoğlu", city: "İstanbul", postalCode: "34435"},
-                            {street: "Bağdat Caddesi No: 67", district: "Kadıköy", city: "İstanbul", postalCode: "34710"},
-                            {street: "Nişantaşı Sokak No: 89", district: "Şişli", city: "İstanbul", postalCode: "34367"}
-                        ];
+                        // Arama kutusu için autocomplete
+                        const searchInput = document.getElementById('search-input');
+                        autocomplete = new google.maps.places.Autocomplete(searchInput, {
+                            types: ['establishment', 'geocode'],
+                            componentRestrictions: { country: 'TR' }
+                        });
                         
-                        var randomAddress = mockAddresses[Math.floor(Math.random() * mockAddresses.length)];
+                        // Arama sonucu seçildiğinde
+                        autocomplete.addListener('place_changed', function() {
+                            const place = autocomplete.getPlace();
+                            if (place.geometry) {
+                                map.setCenter(place.geometry.location);
+                                map.setZoom(16);
+                                
+                                // Marker ekle
+                                selectLocation(place.geometry.location.lat(), place.geometry.location.lng());
+                            }
+                        });
                         
+                        // Harita tıklama eventi
+                        map.addListener("click", (event) => {
+                            selectLocation(event.latLng.lat(), event.latLng.lng());
+                        });
+                    }
+                    
+                    // Konum seçimi fonksiyonu
+                    function selectLocation(lat, lng) {
+                        // Önceki marker'ı temizle
+                        if (selectedMarker) {
+                            selectedMarker.setMap(null);
+                        }
+                        
+                        // Yeni marker ekle
+                        selectedMarker = new google.maps.Marker({
+                            position: { lat: lat, lng: lng },
+                            map: map,
+                            title: "Seçilen Konum",
+                            icon: {
+                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="#e74c3c">
+                                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                                    </svg>
+                                `),
+                                scaledSize: new google.maps.Size(40, 40),
+                                anchor: new google.maps.Point(20, 40)
+                            },
+                            animation: google.maps.Animation.DROP
+                        });
+                        
+                        selectedLocation = { lat: lat, lng: lng };
+                        
+                        // Koordinat bilgilerini göster
                         document.getElementById('lat-lng').textContent = 
-                            'Enlem: ' + lat.toFixed(6) + ', Boylam: ' + lng.toFixed(6);
-                        document.getElementById('address').textContent = 
-                            randomAddress.street + ', ' + randomAddress.district + '/' + randomAddress.city;
+                            `Enlem: ${lat.toFixed(6)}, Boylam: ${lng.toFixed(6)}`;
                         document.getElementById('coordinates').style.display = 'block';
                         
-                        // Java tarafına bilgileri gönder
-                        if (window.javaApp) {
-                            window.javaApp.locationSelected({
-                                latitude: lat,
-                                longitude: lng,
-                                address: randomAddress.street + ', ' + randomAddress.district + '/' + randomAddress.city,
-                                street: randomAddress.street,
-                                district: randomAddress.district,
-                                city: randomAddress.city,
-                                postalCode: randomAddress.postalCode
-                            });
+                        // Reverse geocoding ile adres bilgisi al
+                        geocoder.geocode({ location: { lat: lat, lng: lng } }, (results, status) => {
+                            if (status === "OK" && results[0]) {
+                                const addressComponents = results[0].address_components;
+                                const formattedAddress = results[0].formatted_address;
+                                
+                                // Adres bileşenlerini parse et
+                                let street = "";
+                                let district = "";
+                                let city = "";
+                                let postalCode = "";
+                                
+                                addressComponents.forEach(component => {
+                                    const types = component.types;
+                                    if (types.includes('route')) {
+                                        street = component.long_name;
+                                    } else if (types.includes('street_number')) {
+                                        street = component.long_name + " " + street;
+                                    } else if (types.includes('sublocality') || types.includes('neighborhood')) {
+                                        district = component.long_name;
+                                    } else if (types.includes('administrative_area_level_1')) {
+                                        city = component.long_name;
+                                    } else if (types.includes('postal_code')) {
+                                        postalCode = component.long_name;
+                                    }
+                                });
+                                
+                                document.getElementById('address').textContent = formattedAddress;
+                                
+                                // Java tarafına bilgileri gönder
+                                if (window.javaApp) {
+                                    window.javaApp.locationSelected({
+                                        latitude: lat,
+                                        longitude: lng,
+                                        address: formattedAddress,
+                                        street: street || "",
+                                        district: district || "",
+                                        city: city || "",
+                                        postalCode: postalCode || ""
+                                    });
+                                }
+                            } else {
+                                document.getElementById('address').textContent = "Adres bilgisi alınamadı";
+                                
+                                // Temel bilgilerle Java'ya gönder
+                                if (window.javaApp) {
+                                    window.javaApp.locationSelected({
+                                        latitude: lat,
+                                        longitude: lng,
+                                        address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                                        street: "",
+                                        district: "",
+                                        city: "",
+                                        postalCode: ""
+                                    });
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Kullanıcının mevcut konumunu al
+                    function getCurrentLocation() {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                                (position) => {
+                                    const lat = position.coords.latitude;
+                                    const lng = position.coords.longitude;
+                                    
+                                    map.setCenter({ lat: lat, lng: lng });
+                                    map.setZoom(16);
+                                    selectLocation(lat, lng);
+                                },
+                                (error) => {
+                                    alert("Konum alınamadı: " + error.message);
+                                }
+                            );
+                        } else {
+                            alert("Tarayıcınız konum servislerini desteklemiyor.");
                         }
                     }
                     
+                    // Seçimi temizle
+                    function clearSelection() {
+                        if (selectedMarker) {
+                            selectedMarker.setMap(null);
+                            selectedMarker = null;
+                        }
+                        selectedLocation = null;
+                        document.getElementById('coordinates').style.display = 'none';
+                        document.getElementById('search-input').value = '';
+                        
+                        if (window.javaApp) {
+                            window.javaApp.locationCleared();
+                        }
+                    }
+                    
+                    // Seçilen konumu döndür
                     function getSelectedLocation() {
                         return selectedLocation;
                     }
+                </script>
+                
+                <!-- Google Maps API -->
+                <script async defer
+                    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRYfrvFsxgARSM_iE7JA1EHu1nSpaWAxc&libraries=places&callback=initMap">
                 </script>
             </body>
             </html>
