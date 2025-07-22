@@ -134,6 +134,7 @@ public class SuperadminDashboardFX {
         MenuItem walletsMenu = new MenuItem("Cüzdanlar", accentColor4, FontAwesomeSolid.WALLET);
         walletsMenu.addSubItem(new MenuItem("Cüzdan Durumu Güncelleme", accentColor4, FontAwesomeSolid.EDIT, "WalletStatusUpdate"));
         walletsMenu.addSubItem(new MenuItem("Tüm Cüzdanlar", accentColor4, FontAwesomeSolid.LIST, "AllWallets"));
+        walletsMenu.addSubItem(new MenuItem("Transfer İşlemleri", accentColor4, FontAwesomeSolid.EXCHANGE_ALT, "WalletTransfers"));
         
         // Alfabetik sırada menü listesine ekle
         menuItems.add(approvals);  // Admin Onayları
@@ -795,9 +796,18 @@ public class SuperadminDashboardFX {
         }).thenAccept(incomeData -> {
             if (incomeData != null) {
                 javafx.application.Platform.runLater(() -> {
-                    // Günlük gelir kartını güncelle
-                    Label valueLabel = (Label) dailyIncomeCard.getChildren().get(1);
-                    valueLabel.setText(String.format("₺%,.0f", incomeData[0])); // dailyIncome
+                    try {
+                        // Günlük gelir kartını güncelle - safe cast
+                        if (dailyIncomeCard.getChildren().size() > 1 && 
+                            dailyIncomeCard.getChildren().get(1) instanceof Label) {
+                            Label valueLabel = (Label) dailyIncomeCard.getChildren().get(1);
+                            valueLabel.setText(String.format("₺%,.0f", incomeData[0])); // dailyIncome
+                        } else {
+                            System.err.println("DailyIncomeCard yapısı beklenen formatta değil");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Dashboard güncelleme hatası: " + e.getMessage());
+                    }
                 });
             }
         });
@@ -980,6 +990,17 @@ public class SuperadminDashboardFX {
                     break;
                 case "PaymentPointAdd":
                     new PaymentPointAddPage(stage, accessToken, refreshToken);
+                    break;
+                    
+                // Cüzdan sayfaları
+                case "WalletStatusUpdate":
+                    new WalletStatusUpdatePage(stage, accessToken, refreshToken);
+                    break;
+                case "AllWallets":
+                    new AllWalletsPage(stage, accessToken, refreshToken);
+                    break;
+                case "WalletTransfers":
+                    new WalletTransfersPage(stage, accessToken, refreshToken);
                     break;
                     
                 // Eski sayfalar ve diğerleri

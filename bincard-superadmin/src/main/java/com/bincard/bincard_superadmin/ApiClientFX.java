@@ -1800,4 +1800,133 @@ public class ApiClientFX {
             }
         }
     }
+    
+    // =================================================================
+    // WALLET MANAGEMENT METHODS
+    // =================================================================
+    
+    /**
+     * Cüzdan durumunu günceller
+     */
+    public static String updateWalletStatus(TokenDTO accessToken, boolean isActive) throws IOException {
+        System.out.println("🔄 updateWalletStatus çağrıldı - isActive: " + isActive);
+        
+        try {
+            String endpoint = BASE_URL + "/wallet/toggleWalletStatus?isActive=" + isActive;
+            URI uri = new URI(endpoint);
+            URL url = uri.toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            
+            try {
+                connection.setRequestMethod("PUT");
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+                
+                int responseCode = connection.getResponseCode();
+                System.out.println("   - Response Code: " + responseCode);
+                
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                        responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream()))) {
+                    
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    
+                    String responseStr = response.toString();
+                    System.out.println("   - Response: " + responseStr);
+                    return responseStr;
+                }
+            } finally {
+                connection.disconnect();
+            }
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URI: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Tüm cüzdanları getirir
+     */
+   public static String getAllWallets(TokenDTO accessToken, int page, int size) throws IOException {
+    System.out.println("🔄 getAllWallets çağrıldı - page: " + page + ", size: " + size);
+
+    try {
+        // Sıralama createdAt alanına göre DESC (yeni ilk) olacak şekilde ayarlandı
+        String endpoint = BASE_URL + "/wallet/admin/all?page=" + page + "&size=" + size + "&sort=id,desc";
+        URI uri = new URI(endpoint);
+        URL url = uri.toURL();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        try {
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+
+            int responseCode = connection.getResponseCode();
+            System.out.println("   - Response Code: " + responseCode);
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream()))) {
+
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+
+                String responseStr = response.toString();
+                System.out.println("   - Response length: " + responseStr.length() + " chars");
+
+                return responseStr;
+            }
+        } finally {
+            connection.disconnect();
+        }
+    } catch (URISyntaxException e) {
+        throw new IOException("Invalid URI: " + e.getMessage(), e);
+    }
+}
+
+    /**
+     * Transfer işlemlerini Excel olarak indirir
+     */
+    public static byte[] downloadTransferExcel(TokenDTO accessToken) throws IOException {
+        System.out.println("🔄 downloadTransferExcel çağrıldı");
+        
+        try {
+            String endpoint = BASE_URL + "/wallet/admin/export/transactions/excel";
+            URI uri = new URI(endpoint);
+            URL url = uri.toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            
+            try {
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+                
+                int responseCode = connection.getResponseCode();
+                System.out.println("   - Response Code: " + responseCode);
+                
+                if (responseCode >= 200 && responseCode < 300) {
+                    try (InputStream inputStream = connection.getInputStream()) {
+                        return inputStream.readAllBytes();
+                    }
+                } else {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+                        StringBuilder error = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            error.append(line);
+                        }
+                        throw new IOException("Excel indirme başarısız: " + error.toString());
+                    }
+                }
+            } finally {
+                connection.disconnect();
+            }
+        } catch (URISyntaxException e) {
+            throw new IOException("Invalid URI: " + e.getMessage(), e);
+        }
+    }
 }

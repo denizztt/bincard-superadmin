@@ -87,6 +87,83 @@ public class WalletApiClient {
         }
     }
     
+    /**
+     * Tüm cüzdanları getirir - Sabit sayfa boyutu (10) ve ASC sıralama ile
+     * GET /v1/api/wallet/admin/all
+     */
+    public static String getAllWallets(TokenDTO accessToken, int page) {
+        int pageSize = 10; // Sabit sayfa boyutu
+        
+        BufferedReader br = null;
+        InputStream inputStream = null;
+        
+        try {
+            StringBuilder urlBuilder = new StringBuilder(BASE_URL + "/wallet/admin/all");
+            urlBuilder.append("?page=").append(page);
+            urlBuilder.append("&size=").append(pageSize);
+            urlBuilder.append("&sort=id,asc"); // ASC sıralama
+            
+            System.out.println("Wallet getAllWallets API URL: " + urlBuilder.toString());
+            
+            // URL yapısını Java 20+ uyumlu şekilde oluştur
+            URL url;
+            try {
+                url = new URI(urlBuilder.toString()).toURL();
+            } catch (URISyntaxException e) {
+                throw new IOException("Invalid URL: " + e.getMessage(), e);
+            }
+            
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+            conn.setRequestProperty("Content-Type", "application/json");
+            
+            int code = conn.getResponseCode();
+            System.out.println("Wallet getAllWallets API yanıt kodu: " + code);
+            
+            inputStream = (code == 200) ? conn.getInputStream() : conn.getErrorStream();
+            br = new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
+            
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            String responseStr = response.toString();
+            System.out.println("Wallet getAllWallets API tam yanıtı (" + responseStr.length() + " karakter): " + responseStr);
+            
+            if (code == 200) {
+                return responseStr;
+            } else {
+                String errorMsg = extractJsonMessage(responseStr);
+                System.err.println("API hatası: " + errorMsg);
+                return "{\"success\":false,\"message\":\"" + (errorMsg != null ? errorMsg : "Cüzdanlar alınamadı: " + code) + "\",\"data\":{\"content\":[]}}";
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Wallet getAllWallets API hatası: " + e.getMessage());
+            e.printStackTrace();
+            return "{\"success\":false,\"message\":\"API bağlantı hatası: " + e.getMessage() + "\",\"data\":{\"content\":[]}}";
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    System.err.println("BufferedReader kapatılırken hata: " + e.getMessage());
+                }
+            }
+            
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    System.err.println("InputStream kapatılırken hata: " + e.getMessage());
+                }
+            }
+        }
+    }
+    
     // =================================================================
     // WALLET IDENTITY VERIFICATION API
     // =================================================================
@@ -260,6 +337,169 @@ public class WalletApiClient {
         }
     }
     
+    /**
+     * Cüzdan transfer işlemlerini getirir
+     * GET /v1/api/wallet/transfers
+     */
+    public static String getWalletTransfers(TokenDTO accessToken, String status, String startDate, String endDate, 
+                                          int page, int size, String sortBy, String sortDir) {
+        BufferedReader br = null;
+        InputStream inputStream = null;
+        
+        try {
+            StringBuilder urlBuilder = new StringBuilder(BASE_URL + "/wallet/transfers");
+            urlBuilder.append("?page=").append(page);
+            urlBuilder.append("&size=").append(size);
+            urlBuilder.append("&sortBy=").append(sortBy);
+            urlBuilder.append("&sortDir=").append(sortDir);
+            
+            // "Tümü" değerini gönderme, boş bırak
+            if (status != null && !status.isEmpty() && !status.equals("Tümü")) {
+                urlBuilder.append("&status=").append(status);
+            }
+            if (startDate != null && !startDate.isEmpty()) {
+                urlBuilder.append("&startDate=").append(startDate);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                urlBuilder.append("&endDate=").append(endDate);
+            }
+            
+            System.out.println("Wallet transfers API URL: " + urlBuilder.toString());
+            
+            // URL yapısını Java 20+ uyumlu şekilde oluştur
+            URL url;
+            try {
+                url = new URI(urlBuilder.toString()).toURL();
+            } catch (URISyntaxException e) {
+                throw new IOException("Invalid URL: " + e.getMessage(), e);
+            }
+            
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+            conn.setRequestProperty("Content-Type", "application/json");
+            
+            int code = conn.getResponseCode();
+            System.out.println("Wallet transfers API yanıt kodu: " + code);
+            
+            inputStream = (code == 200) ? conn.getInputStream() : conn.getErrorStream();
+            br = new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
+            
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            String responseStr = response.toString();
+            System.out.println("Wallet transfers API tam yanıtı: " + responseStr);
+            
+            if (code == 200) {
+                return responseStr;
+            } else {
+                String errorMsg = extractJsonMessage(responseStr);
+                System.err.println("API hatası: " + errorMsg);
+                return "{\"success\":false,\"message\":\"" + (errorMsg != null ? errorMsg : "Transfer işlemleri alınamadı: " + code) + "\",\"data\":{\"content\":[]}}";
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Wallet transfers API hatası: " + e.getMessage());
+            e.printStackTrace();
+            return "{\"success\":false,\"message\":\"API bağlantı hatası: " + e.getMessage() + "\",\"data\":{\"content\":[]}}";
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    System.err.println("BufferedReader kapatılırken hata: " + e.getMessage());
+                }
+            }
+            
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    System.err.println("InputStream kapatılırken hata: " + e.getMessage());
+                }
+            }
+        }
+    }
+    
+    /**
+     * Tüm cüzdanları sayfalama ile getirir
+     * GET /v1/api/wallet/admin/all
+     */
+    public static String getAllWallets(TokenDTO accessToken, int page, int size) {
+        BufferedReader br = null;
+        InputStream inputStream = null;
+        
+        try {
+            StringBuilder urlBuilder = new StringBuilder(BASE_URL + "/wallet/admin/all");
+            urlBuilder.append("?page=").append(page);
+            urlBuilder.append("&size=").append(size);
+            urlBuilder.append("&sort=id,desc");
+            
+            System.out.println("All wallets API URL: " + urlBuilder.toString());
+            
+            // URL yapısını Java 20+ uyumlu şekilde oluştur
+            URL url;
+            try {
+                url = new URI(urlBuilder.toString()).toURL();
+            } catch (URISyntaxException e) {
+                throw new IOException("Invalid URL: " + e.getMessage(), e);
+            }
+            
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Authorization", "Bearer " + accessToken.getToken());
+            conn.setRequestProperty("Content-Type", "application/json");
+            
+            int code = conn.getResponseCode();
+            System.out.println("All wallets API yanıt kodu: " + code);
+            
+            inputStream = (code == 200) ? conn.getInputStream() : conn.getErrorStream();
+            br = new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
+            
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            
+            String responseStr = response.toString();
+            System.out.println("All wallets API tam yanıtı: " + responseStr);
+            
+            if (code == 200) {
+                return responseStr;
+            } else {
+                String errorMsg = extractJsonMessage(responseStr);
+                System.err.println("API hatası: " + errorMsg);
+                return "{\"success\":false,\"message\":\"" + (errorMsg != null ? errorMsg : "Cüzdanlar alınamadı: " + code) + "\",\"data\":{\"content\":[]}}";
+            }
+            
+        } catch (Exception e) {
+            System.err.println("All wallets API hatası: " + e.getMessage());
+            e.printStackTrace();
+            return "{\"success\":false,\"message\":\"API bağlantı hatası: " + e.getMessage() + "\",\"data\":{\"content\":[]}}";
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    System.err.println("BufferedReader kapatılırken hata: " + e.getMessage());
+                }
+            }
+            
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    System.err.println("InputStream kapatılırken hata: " + e.getMessage());
+                }
+            }
+        }
+    }
+    
     // =================================================================
     // UTILITY METHODS
     // =================================================================
@@ -292,5 +532,24 @@ public class WalletApiClient {
             }
         }
         return null;
+    }
+
+    private String extractNumberOrStringFromJson(String json, String key) {
+        try {
+            // Önce string olarak dene
+            String pattern = "\"" + key + "\"\\s*:\\s*\"([^\"]*)\"";
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile(pattern);
+            java.util.regex.Matcher m = p.matcher(json);
+            if (m.find()) return m.group(1);
+            // Sonra sayısal olarak dene
+            pattern = "\"" + key + "\"\\s*:\\s*([0-9.]+)";
+            p = java.util.regex.Pattern.compile(pattern);
+            m = p.matcher(json);
+            if (m.find()) return m.group(1);
+            // null ise
+            String nullPattern = "\"" + key + "\"\\s*:\\s*null";
+            if (json.matches(".*" + nullPattern + ".*")) return null;
+        } catch (Exception ignored) {}
+        return "";
     }
 }
