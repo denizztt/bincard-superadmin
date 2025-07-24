@@ -38,7 +38,6 @@ com\bincard\bincard_superadmin\BusesPage.class
 com\bincard\bincard_superadmin\model\PagedResponse$Pageable.class
 com\bincard\bincard_superadmin\NewsPage.class
 com\bincard\bincard_superadmin\model\PaymentMethod.class
-com\bincard\bincard_superadmin\PaymentPointAddPage$JavaScriptBridge.class
 com\bincard\bincard_superadmin\SuperadminPageBase.class
 com\bincard\bincard_superadmin\SuperadminLoginFX$3.class
 com\bincard\bincard_superadmin\PaymentPointUpdateDTO.class

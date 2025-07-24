@@ -136,11 +136,15 @@ public class SuperadminDashboardFX {
         walletsMenu.addSubItem(new MenuItem("Tüm Cüzdanlar", accentColor4, FontAwesomeSolid.LIST, "AllWallets"));
         walletsMenu.addSubItem(new MenuItem("Transfer İşlemleri", accentColor4, FontAwesomeSolid.EXCHANGE_ALT, "WalletTransfers"));
         
+        // Feedback menüsü
+        MenuItem feedbackMenu = new MenuItem("Geri Bildirimler", accentColor1, FontAwesomeSolid.COMMENT_ALT, "FeedbackList");
+        
         // Alfabetik sırada menü listesine ekle
         menuItems.add(approvals);  // Admin Onayları
         menuItems.add(auditLogs);  // Denetim Kayıtları
         menuItems.add(walletsMenu); // Cüzdanlar
         menuItems.add(stopsMenu);  // Duraklar
+        menuItems.add(feedbackMenu); // Geri Bildirimler
         menuItems.add(newsMenu);   // Haberler
         menuItems.add(stats);      // İstatistikler
         menuItems.add(paymentPointsMenu); // Ödeme Noktaları
@@ -1001,6 +1005,11 @@ public class SuperadminDashboardFX {
                     break;
                 case "WalletTransfers":
                     new WalletTransfersPage(stage, accessToken, refreshToken);
+                    break;
+                    
+                // Feedback sayfaları
+                case "FeedbackList":
+                    new FeedbackPage(stage, accessToken, refreshToken);
                     break;
                     
                 // Eski sayfalar ve diğerleri

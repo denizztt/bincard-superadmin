@@ -112,6 +112,12 @@
       <artifactId>gson</artifactId>
       <version>2.10.1</version>
     </dependency>
+    <!-- JSON Library for API responses -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20231013</version>
+    </dependency>
     <dependency>
       <groupId>com.github.almasb</groupId>
       <artifactId>fxgl</artifactId>

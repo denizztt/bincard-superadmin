@@ -21,6 +21,7 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -255,7 +256,10 @@ public class PaymentPointAddPage extends SuperadminPageBase {
             // Web tarayıcısında aç
             desktop.browse(htmlFile.toUri());
             
-            locationStatusLabel.setText("🌐 Web harita açıldı - Konum seçimi bekleniyor...");
+            // Token'ı geçici dosyaya kaydet ki JavaScript okuyabilsin
+            saveTokenToLocalFile();
+            
+            locationStatusLabel.setText("🌐 Web harita açıldı - Token aktarıldı");
             locationStatusLabel.setTextFill(Color.web("#f39c12"));
             
             // Otomatik konum kontrolü başlat
@@ -265,10 +269,10 @@ public class PaymentPointAddPage extends SuperadminPageBase {
             
             // Bilgilendirme mesajı
             showAlert("Web harita açıldı!\n\n" +
+                     "• Token otomatik aktarıldı\n" +
                      "• Haritadan bir konum seçin\n" +
-                     "• 'Konumu Onayla' butonuna tıklayın\n" +
-                     "• Dosya indirilecek ve form otomatik dolacak\n" +
-                     "• İndirilen JSON dosyasını Downloads klasörünüzden bulabilirsiniz", 
+                     "• 'Ödeme Noktasını Kaydet' butonuna tıklayın\n" +
+                     "• Backend'e otomatik olarak gönderilecek", 
                      Alert.AlertType.INFORMATION);
             
         } catch (Exception e) {
@@ -277,6 +281,38 @@ public class PaymentPointAddPage extends SuperadminPageBase {
             showAlert("Web harita açılamadı!\n\nHata: " + e.getMessage() + 
                      "\n\nLütfen varsayılan web tarayıcınızın düzgün çalıştığından emin olun.", 
                      Alert.AlertType.ERROR);
+        }
+    }
+    
+    /**
+     * Token'ı geçici dosyaya kaydet ki JavaScript okuyabilsin
+     */
+    private void saveTokenToLocalFile() {
+        try {
+            // 1. Token'ı Downloads klasörüne kaydet
+            Path tokenFile = Paths.get(System.getProperty("user.home"), "Downloads", "bincard_token.txt");
+            Files.write(tokenFile, this.accessToken.getToken().getBytes(), 
+                       java.nio.file.StandardOpenOption.CREATE, 
+                       java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+            
+            // 2. HTML dosyasına token inject script dosyası oluştur
+            String tokenScript = String.format(
+                "// Token inject script\n" +
+                "console.log('🔑 Token JavaFX uygulamasından alındı');\n" +
+                "localStorage.setItem('bincard_auth_token', '%s');\n" +
+                "console.log('✅ Token localStorage\\'a kaydedildi');",
+                this.accessToken.getToken()
+            );
+            
+            Path scriptFile = Paths.get("token_inject.js");
+            Files.write(scriptFile, tokenScript.getBytes(),
+                       java.nio.file.StandardOpenOption.CREATE,
+                       java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+            
+            System.out.println("🔑 Token dosyaya kaydedildi: " + tokenFile.toString());
+            System.out.println("📜 Token script oluşturuldu: " + scriptFile.toString());
+        } catch (Exception e) {
+            System.err.println("❌ Token kaydetme hatası: " + e.getMessage());
         }
     }
     
@@ -300,66 +336,221 @@ public class PaymentPointAddPage extends SuperadminPageBase {
     }
     
     /**
-     * Downloads klasöründe JSON dosyasını kontrol et
+     * Downloads klasöründe en son indirilen JSON dosyasını kontrol et
      */
     private void checkDownloadsFolder() {
         try {
             // Kullanıcının Downloads klasörünü bul
             String userHome = System.getProperty("user.home");
             Path downloadsDir = Paths.get(userHome, "Downloads");
-            Path jsonFile = downloadsDir.resolve("bincard_location_data.json");
             
-            if (Files.exists(jsonFile)) {
-                System.out.println("📥 Downloads klasöründe JSON dosyası bulundu: " + jsonFile.toString());
+            if (!Files.exists(downloadsDir)) {
+                return;
+            }
+            
+            // Son 1 dakikada oluşturulan JSON dosyalarını bul
+            long oneMinuteAgo = System.currentTimeMillis() - (60 * 1000);
+            Path latestJsonFile = null;
+            long latestTime = 0;
+            
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(downloadsDir, "*.json")) {
+                for (Path file : stream) {
+                    try {
+                        // Dosya adında bincard içeren ve son 1 dakikada oluşturulan dosyaları bul
+                        String fileName = file.getFileName().toString().toLowerCase();
+                        if (fileName.contains("bincard") && 
+                           (fileName.contains("location") || fileName.contains("payment_point"))) {
+                            
+                            long fileTime = Files.getLastModifiedTime(file).toMillis();
+                            
+                            // Son 1 dakikada oluşturulmuş ve en yeni olan dosyayı bul
+                            if (fileTime > oneMinuteAgo && fileTime > latestTime) {
+                                latestTime = fileTime;
+                                latestJsonFile = file;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Dosya okuma hatası - devam et
+                        continue;
+                    }
+                }
+            }
+            
+            // En son bulunan dosyayı işle
+            if (latestJsonFile != null) {
+                System.out.println("📥 Downloads klasöründe en son JSON dosyası bulundu: " + latestJsonFile.toString());
                 
-                String jsonContent = Files.readString(jsonFile, StandardCharsets.UTF_8);
+                String jsonContent = Files.readString(latestJsonFile, StandardCharsets.UTF_8);
                 
                 if (!jsonContent.trim().isEmpty() && jsonContent.contains("latitude")) {
                     System.out.println("📋 Downloads'dan konum verisi okunuyor...");
                     
-                    // JSON'dan değerleri çıkar
-                    String latitude = extractJsonValue(jsonContent, "latitude");
-                    String longitude = extractJsonValue(jsonContent, "longitude");
-                    String address = extractJsonValue(jsonContent, "address");
-                    String street = extractJsonValue(jsonContent, "street");
-                    String district = extractJsonValue(jsonContent, "district");
-                    String city = extractJsonValue(jsonContent, "city");
-                    String postalCode = extractJsonValue(jsonContent, "postalCode");
-                    
-                    // Form alanlarını doldur
-                    if (!latitude.isEmpty()) latitudeField.setText(latitude);
-                    if (!longitude.isEmpty()) longitudeField.setText(longitude);
-                    if (!address.isEmpty()) addressField.setText(address);
-                    if (!street.isEmpty()) streetField.setText(street);
-                    if (!district.isEmpty()) districtField.setText(district);
-                    if (!city.isEmpty()) cityField.setText(city);
-                    if (!postalCode.isEmpty()) postalCodeField.setText(postalCode);
-                    
-                    // Status güncelle
-                    locationStatusLabel.setText("✅ Konum Downloads'dan alındı ve form dolduruldu!");
-                    locationStatusLabel.setTextFill(Color.web("#27AE60"));
-                    
-                    // Başarı mesajı
-                    showAlert("🎉 Konum bilgileri başarıyla alındı!\n\n" +
-                             "📍 Koordinatlar: " + latitude + ", " + longitude + "\n" +
-                             "📍 Adres: " + address + "\n\n" +
-                             "Form alanları otomatik olarak dolduruldu.", 
-                             Alert.AlertType.INFORMATION);
-                    
-                    // İzlemeyi durdur
-                    if (locationChecker != null) {
-                        locationChecker.shutdown();
-                        locationChecker = null;
+                    // Eğer ödeme noktası verisi ise backend'e gönder
+                    if (latestJsonFile.getFileName().toString().toLowerCase().contains("payment_point")) {
+                        processPaymentPointData(jsonContent, latestJsonFile);
+                    } else {
+                        // Konum verisi ise form doldur
+                        processLocationData(jsonContent, latestJsonFile);
                     }
-                    
-                    // Dosyayı temizle
-                    Files.delete(jsonFile);
-                    System.out.println("✅ Downloads'daki JSON dosyası işlendi ve temizlendi");
                 }
             }
             
         } catch (Exception e) {
             // Sessizce ignore et - normal durum
+        }
+    }
+    
+    /**
+     * Konum verisi işle ve formu doldur
+     */
+    private void processLocationData(String jsonContent, Path jsonFile) {
+        try {
+            // JSON'dan değerleri çıkar
+            String latitude = extractJsonValue(jsonContent, "latitude");
+            String longitude = extractJsonValue(jsonContent, "longitude");
+            String address = extractJsonValue(jsonContent, "address");
+            String street = extractJsonValue(jsonContent, "street");
+            String district = extractJsonValue(jsonContent, "district");
+            String city = extractJsonValue(jsonContent, "city");
+            String postalCode = extractJsonValue(jsonContent, "postalCode");
+            
+            // Form alanlarını doldur
+            if (!latitude.isEmpty()) latitudeField.setText(latitude);
+            if (!longitude.isEmpty()) longitudeField.setText(longitude);
+            if (!address.isEmpty()) addressField.setText(address);
+            if (!street.isEmpty()) streetField.setText(street);
+            if (!district.isEmpty()) districtField.setText(district);
+            if (!city.isEmpty()) cityField.setText(city);
+            if (!postalCode.isEmpty()) postalCodeField.setText(postalCode);
+            
+            // Status güncelle
+            locationStatusLabel.setText("✅ Konum Downloads'dan alındı ve form dolduruldu!");
+            locationStatusLabel.setTextFill(Color.web("#27AE60"));
+            
+            // Başarı mesajı
+            showAlert("🎉 Konum bilgileri başarıyla alındı!\n\n" +
+                     "📍 Koordinatlar: " + latitude + ", " + longitude + "\n" +
+                     "📍 Adres: " + address + "\n\n" +
+                     "Form alanları otomatik olarak dolduruldu.", 
+                     Alert.AlertType.INFORMATION);
+            
+            // İzlemeyi durdur
+            if (locationChecker != null) {
+                locationChecker.shutdown();
+                locationChecker = null;
+            }
+            
+            // Dosyayı temizle
+            Files.delete(jsonFile);
+            System.out.println("✅ Downloads'daki JSON dosyası işlendi ve temizlendi");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Konum verisi işleme hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Ödeme noktası verisi işle ve backend'e gönder
+     */
+    private void processPaymentPointData(String jsonContent, Path jsonFile) {
+        try {
+            System.out.println("💳 Ödeme noktası verisi işleniyor...");
+            
+            // JSON array'i parse et
+            if (jsonContent.trim().startsWith("[")) {
+                // Array formatında - son elemanı al
+                int lastIndex = jsonContent.lastIndexOf("},");
+                if (lastIndex > 0) {
+                    String lastItem = jsonContent.substring(lastIndex + 2);
+                    if (lastItem.trim().startsWith("{")) {
+                        processLastPaymentPoint(lastItem.substring(0, lastItem.lastIndexOf("}")+1));
+                    }
+                }
+            } else if (jsonContent.trim().startsWith("{")) {
+                // Tek obje formatında
+                processLastPaymentPoint(jsonContent);
+            }
+            
+            // Dosyayı temizle
+            Files.delete(jsonFile);
+            System.out.println("✅ Downloads'daki ödeme noktası dosyası işlendi ve temizlendi");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Ödeme noktası verisi işleme hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Son ödeme noktasını backend'e gönder
+     */
+    private void processLastPaymentPoint(String paymentPointJson) {
+        try {
+            // JSON'dan PaymentPointUpdateDTO oluştur
+            PaymentPointUpdateDTO paymentPointData = new PaymentPointUpdateDTO();
+            
+            // Name
+            paymentPointData.setName(extractJsonValue(paymentPointJson, "name"));
+            
+            // Location
+            PaymentPointUpdateDTO.LocationDTO location = new PaymentPointUpdateDTO.LocationDTO();
+            location.setLatitude(Double.parseDouble(extractJsonValue(paymentPointJson, "latitude")));
+            location.setLongitude(Double.parseDouble(extractJsonValue(paymentPointJson, "longitude")));
+            paymentPointData.setLocation(location);
+            
+            // Address
+            PaymentPointUpdateDTO.AddressDTO address = new PaymentPointUpdateDTO.AddressDTO();
+            address.setStreet(extractJsonValue(paymentPointJson, "street"));
+            address.setDistrict(extractJsonValue(paymentPointJson, "district"));
+            address.setCity(extractJsonValue(paymentPointJson, "city"));
+            address.setPostalCode(extractJsonValue(paymentPointJson, "postalCode"));
+            paymentPointData.setAddress(address);
+            
+            paymentPointData.setContactNumber(extractJsonValue(paymentPointJson, "contact"));
+            paymentPointData.setWorkingHours(extractJsonValue(paymentPointJson, "startTime") + " - " + extractJsonValue(paymentPointJson, "endTime"));
+            paymentPointData.setDescription(extractJsonValue(paymentPointJson, "description"));
+            paymentPointData.setActive(Boolean.parseBoolean(extractJsonValue(paymentPointJson, "active")));
+            
+            // Payment methods - array parse et
+            java.util.List<String> paymentMethods = new java.util.ArrayList<>();
+            String methodsStr = extractJsonValue(paymentPointJson, "paymentMethods");
+            if (methodsStr.contains("[")) {
+                // Array formatında
+                methodsStr = methodsStr.replaceAll("[\\[\\]\"\\s]", "");
+                for (String method : methodsStr.split(",")) {
+                    if (!method.trim().isEmpty()) {
+                        paymentMethods.add(method.trim().toUpperCase().replace("-", "_"));
+                    }
+                }
+            }
+            if (paymentMethods.isEmpty()) {
+                paymentMethods.add("CASH");
+            }
+            paymentPointData.setPaymentMethods(paymentMethods);
+            
+            // Backend'e gönder
+            Platform.runLater(() -> {
+                try {
+                    String result = PaymentPointApiClient.createPaymentPoint(paymentPointData, getToken());
+                    
+                    if (result.contains("\"success\":true") || result.contains("başarı")) {
+                        showAlert("✅ Ödeme noktası backend'e başarıyla kaydedildi!", Alert.AlertType.INFORMATION);
+                        System.out.println("✅ Ödeme noktası backend'e başarıyla gönderildi");
+                    } else {
+                        showAlert("❌ Backend kayıt hatası: " + result, Alert.AlertType.ERROR);
+                        System.err.println("Backend yanıtı: " + result);
+                    }
+                    
+                } catch (Exception apiException) {
+                    showAlert("⚠️ Backend API hatası: " + apiException.getMessage(), Alert.AlertType.WARNING);
+                    System.err.println("Backend API hatası: " + apiException.getMessage());
+                }
+            });
+            
+        } catch (Exception e) {
+            System.err.println("❌ Ödeme noktası işleme hatası: " + e.getMessage());
+            Platform.runLater(() -> {
+                showAlert("❌ Ödeme noktası işleme hatası: " + e.getMessage(), Alert.AlertType.ERROR);
+            });
         }
     }
     
@@ -790,8 +981,100 @@ public class PaymentPointAddPage extends SuperadminPageBase {
             return;
         }
         
-        // Burada API çağrısı yapılacak
-        showAlert("Ödeme noktası başarıyla kaydedildi!", Alert.AlertType.INFORMATION);
+        try {
+            // Ödeme yöntemlerini topla
+            StringBuilder paymentMethods = new StringBuilder();
+            if (cashCheckBox.isSelected()) paymentMethods.append("cash,");
+            if (creditCardCheckBox.isSelected()) paymentMethods.append("credit-card,");
+            if (debitCardCheckBox.isSelected()) paymentMethods.append("debit-card,");
+            if (mobileAppCheckBox.isSelected()) paymentMethods.append("mobile-app,");
+            if (qrCodeCheckBox.isSelected()) paymentMethods.append("qr-code,");
+            
+            // Son virgülü kaldır
+            if (paymentMethods.length() > 0) {
+                paymentMethods.setLength(paymentMethods.length() - 1);
+            }
+            
+            // Çalışma saatlerini formatla
+            String startTime = String.format("%02d:%02d", 
+                (int)startHourSlider.getValue(), (int)startMinuteSlider.getValue());
+            String endTime = String.format("%02d:%02d", 
+                (int)endHourSlider.getValue(), (int)endMinuteSlider.getValue());
+            
+            // PaymentPointUpdateDTO ile veri hazırla
+            PaymentPointUpdateDTO paymentPointData = new PaymentPointUpdateDTO();
+            paymentPointData.setName(nameField.getText().trim());
+            paymentPointData.setDescription(descriptionArea.getText().trim());
+            
+            // Location DTO
+            PaymentPointUpdateDTO.LocationDTO location = new PaymentPointUpdateDTO.LocationDTO();
+            try {
+                location.setLatitude(Double.parseDouble(latitudeField.getText().trim()));
+                location.setLongitude(Double.parseDouble(longitudeField.getText().trim()));
+            } catch (NumberFormatException e) {
+                showAlert("❌ Geçersiz koordinat formatı!", Alert.AlertType.ERROR);
+                return;
+            }
+            paymentPointData.setLocation(location);
+            
+            // Address DTO
+            PaymentPointUpdateDTO.AddressDTO address = new PaymentPointUpdateDTO.AddressDTO();
+            address.setStreet(streetField.getText().trim());
+            address.setDistrict(districtField.getText().trim());
+            address.setCity(cityField.getText().trim());
+            address.setPostalCode(postalCodeField.getText().trim());
+            paymentPointData.setAddress(address);
+            
+            paymentPointData.setContactNumber(contactNumberField.getText().trim());
+            paymentPointData.setWorkingHours(startTime + " - " + endTime);
+            
+            // Ödeme yöntemlerini List<String> olarak ayarla
+            java.util.List<String> paymentMethodsList = new java.util.ArrayList<>();
+            if (cashCheckBox.isSelected()) paymentMethodsList.add("cash");
+            if (creditCardCheckBox.isSelected()) paymentMethodsList.add("credit-card");
+            if (debitCardCheckBox.isSelected()) paymentMethodsList.add("debit-card");
+            if (mobileAppCheckBox.isSelected()) paymentMethodsList.add("mobile-app");
+            if (qrCodeCheckBox.isSelected()) paymentMethodsList.add("qr-code");
+            paymentPointData.setPaymentMethods(paymentMethodsList);
+            
+            paymentPointData.setActive(activeCheckBox.isSelected());
+            
+            System.out.println("📤 Backend'e gönderilecek ödeme noktası verisi:");
+            System.out.println("Name: " + paymentPointData.getName());
+            System.out.println("Location: " + paymentPointData.getLocation().getLatitude() + ", " + paymentPointData.getLocation().getLongitude());
+            System.out.println("Address - Street: " + paymentPointData.getAddress().getStreet());
+            System.out.println("Address - District: " + paymentPointData.getAddress().getDistrict());
+            System.out.println("Address - City: " + paymentPointData.getAddress().getCity());
+            System.out.println("Working Hours: " + paymentPointData.getWorkingHours());
+            System.out.println("Payment Methods: " + paymentPointData.getPaymentMethods());
+            
+            // Backend API'ye gönder
+            try {
+                String result = PaymentPointApiClient.createPaymentPoint(paymentPointData, getToken());
+                
+                if (result.contains("\"success\":true") || result.contains("başarı")) {
+                    showAlert("✅ Ödeme noktası başarıyla kaydedildi!", Alert.AlertType.INFORMATION);
+                    
+                    // Form temizle
+                    clearForm();
+                    
+                    System.out.println("✅ Ödeme noktası backend'e başarıyla kaydedildi");
+                } else {
+                    showAlert("❌ Ödeme noktası kaydedilirken hata oluştu: " + result, Alert.AlertType.ERROR);
+                    System.err.println("Backend yanıtı: " + result);
+                }
+            } catch (Exception apiException) {
+                // API hatası olsa bile form temizle
+                showAlert("⚠️ Ödeme noktası form verisi temizlendi, ancak backend'e kayıt başarısız: " + apiException.getMessage(), Alert.AlertType.WARNING);
+                clearForm();
+                System.err.println("Backend API hatası: " + apiException.getMessage());
+            }
+            
+        } catch (Exception e) {
+            System.err.println("❌ Ödeme noktası kaydetme hatası: " + e.getMessage());
+            e.printStackTrace();
+            showAlert("❌ Beklenmeyen hata: " + e.getMessage(), Alert.AlertType.ERROR);
+        }
     }
     
     private void clearForm() {
@@ -826,5 +1109,12 @@ public class PaymentPointAddPage extends SuperadminPageBase {
         locationStatusLabel.setText("Henüz konum seçilmedi");
         locationStatusLabel.setTextFill(Color.web("#e74c3c"));
         locationStatusLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+    }
+    
+    /**
+     * Token'ı al - constructor'da verilen accessToken'ı döndür
+     */
+    private TokenDTO getToken() {
+        return this.accessToken; // SuperadminPageBase'den gelen accessToken
     }
 }
