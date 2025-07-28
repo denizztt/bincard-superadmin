@@ -1,0 +1,195 @@
+package com.bincard.bincard_superadmin;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import javafx.application.Platform;
+import javafx.scene.control.*;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Timer;
+import java.util.TimerTask;
+
+/**
+ * Web formlarından JavaFX uygulamasına veri aktarımını yöneten utility class
+ * Location picker ve diğer web formlarından gelen JSON verilerini otomatik olarak ilgili JavaFX formlarına aktarır
+ */
+public class WebFormDataBridge {
+    
+    private static final String DATA_FILE_NAME = "bincard_payment_point_data.json";
+    private static final String TEMP_DATA_FILE = "web_form_temp_data.json";
+    
+    private final Gson gson = new Gson();
+    private Timer fileWatcher;
+    private Stage stage;
+    
+    public WebFormDataBridge(Stage stage) {
+        this.stage = stage;
+    }
+    
+    /**
+     * Dosya izleme sistemini başlatır
+     * Downloads klasöründeki JSON dosyasını belirli aralıklarla kontrol eder
+     */
+    public void startWatching(PaymentPointFormHandler formHandler) {
+        if (fileWatcher != null) {
+            fileWatcher.cancel();
+        }
+        
+        fileWatcher = new Timer("WebFormDataBridge", true);
+        fileWatcher.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                checkForNewData(formHandler);
+            }
+        }, 1000, 2000); // Her 2 saniyede bir kontrol et
+        
+        System.out.println("🔄 Web form data bridge başlatıldı - Downloads klasörü izleniyor...");
+    }
+    
+    /**
+     * Dosya izleme sistemini durdurur
+     */
+    public void stopWatching() {
+        if (fileWatcher != null) {
+            fileWatcher.cancel();
+            fileWatcher = null;
+            System.out.println("🛑 Web form data bridge durduruldu");
+        }
+    }
+    
+    /**
+     * Downloads klasöründeki yeni veri dosyasını kontrol eder
+     */
+    private void checkForNewData(PaymentPointFormHandler formHandler) {
+        try {
+            // Downloads klasörünü kontrol et
+            String userHome = System.getProperty("user.home");
+            Path downloadsPath = Paths.get(userHome, "Downloads", DATA_FILE_NAME);
+            
+            if (Files.exists(downloadsPath)) {
+                // Dosya var, son veriyi al ve form'a aktar
+                String jsonContent = Files.readString(downloadsPath);
+                PaymentPointData[] dataArray = gson.fromJson(jsonContent, PaymentPointData[].class);
+                
+                if (dataArray != null && dataArray.length > 0) {
+                    PaymentPointData latestData = dataArray[dataArray.length - 1];
+                    
+                    // Son eklenen veriyi JavaFX thread'inde form'a aktar
+                    Platform.runLater(() -> {
+                        formHandler.fillFormWithData(latestData);
+                        System.out.println("✅ Web form verisi JavaFX form'a aktarıldı: " + latestData.name);
+                    });
+                    
+                    // Geçici dosyayı temizle (data işlendi)
+                    // Files.deleteIfExists(downloadsPath); // Kullanıcı tekrar görmek isteyebilir
+                }
+            }
+            
+        } catch (IOException | JsonSyntaxException e) {
+            System.err.println("❌ Web form data bridge hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Kullanıcıdan manuel dosya seçimi ister
+     */
+    public void selectDataFileManually(PaymentPointFormHandler formHandler) {
+        Platform.runLater(() -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Ödeme Noktası Veri Dosyası Seç");
+            fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("JSON Dosyaları", "*.json")
+            );
+            
+            // Downloads klasörünü başlangıç dizini yap
+            String userHome = System.getProperty("user.home");
+            File downloadsDir = new File(userHome, "Downloads");
+            if (downloadsDir.exists()) {
+                fileChooser.setInitialDirectory(downloadsDir);
+            }
+            
+            File selectedFile = fileChooser.showOpenDialog(stage);
+            if (selectedFile != null) {
+                loadDataFromFile(selectedFile, formHandler);
+            }
+        });
+    }
+    
+    /**
+     * Belirtilen dosyadan veri yükler
+     */
+    private void loadDataFromFile(File file, PaymentPointFormHandler formHandler) {
+        try {
+            String jsonContent = Files.readString(file.toPath());
+            PaymentPointData[] dataArray = gson.fromJson(jsonContent, PaymentPointData[].class);
+            
+            if (dataArray != null && dataArray.length > 0) {
+                // Son eklenen veriyi kullan
+                PaymentPointData latestData = dataArray[dataArray.length - 1];
+                formHandler.fillFormWithData(latestData);
+                
+                // Başarı mesajı göster
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Veri Yüklendi");
+                alert.setHeaderText("Ödeme Noktası Verisi Başarıyla Yüklendi");
+                alert.setContentText("📁 Dosya: " + file.getName() + "\n📍 Konum: " + latestData.name);
+                alert.showAndWait();
+                
+                System.out.println("✅ Manuel dosya seçimi ile veri yüklendi: " + latestData.name);
+            } else {
+                showError("Seçilen dosyada geçerli veri bulunamadı.");
+            }
+            
+        } catch (IOException | JsonSyntaxException e) {
+            showError("Dosya okuma hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Hata mesajı gösterir
+     */
+    private void showError(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Veri Yükleme Hatası");
+            alert.setHeaderText("Web Form Verisi Yüklenemedi");
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+    
+    /**
+     * PaymentPoint form handler interface
+     */
+    public interface PaymentPointFormHandler {
+        void fillFormWithData(PaymentPointData data);
+    }
+    
+    /**
+     * Web formdan gelen veri modeli
+     */
+    public static class PaymentPointData {
+        public long id;
+        public String name;
+        public String description;
+        public double latitude;
+        public double longitude;
+        public String address;
+        public String street;
+        public String district;
+        public String city;
+        public String postalCode;
+        public String contact;
+        public String startTime;
+        public String endTime;
+        public String[] paymentMethods;
+        public boolean active;
+        public String timestamp;
+    }
+}

@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bincard - Ödeme Noktası Ekle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            margin: 0;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 70px);
+            gap: 0;
+        }
+
+        .map-section {
+            flex: 1;
+            position: relative;
+            background: white;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .search-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        #search-input {
+            width: 400px;
+            padding: 15px 20px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            background: transparent;
+        }
+
+        .form-section {
+            width: 450px;
+            background: white;
+            padding: 30px;
+            overflow-y: auto;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+        }
+
+        .form-title {
+            color: #2c3e50;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group input:read-only {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .location-info {
+            background: linear-gradient(135deg, #e8f5e8, #d4edda);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin-bottom: 20px;
+        }
+
+        .location-info h4 {
+            color: #155724;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .location-info p {
+            color: #155724;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .coordinates {
+            display: flex;
+            gap: 15px;
+        }
+
+        .coordinates .form-group {
+            flex: 1;
+        }
+
+        .working-hours {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .time-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .time-input input {
+            flex: 1;
+            text-align: center;
+        }
+
+        .payment-methods {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+
+        .checkbox-group:hover {
+            background: #f8f9fa;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+
+        .save-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 2000;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .map-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .map-btn {
+            background: white;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .map-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .map-section {
+                height: 400px;
+            }
+
+            .form-section {
+                width: 100%;
+            }
+
+            .search-container {
+                width: 90%;
+                left: 5%;
+                transform: none;
+            }
+
+            #search-input {
+                width: 100%;
+            }
+        }
+    </style>
+    
+    <!-- Token inject script (JavaFX tarafından oluşturulur) -->
+    <script src="token_inject.js" onerror="console.warn('Token script bulunamadı, varsayılan token kullanılacak')"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>🏪 Bincard - Ödeme Noktası Ekle</h1>
+    </div>
+
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div>Harita yükleniyor...</div>
+    </div>
+
+    <div class="container">
+        <!-- Sol Panel - Harita -->
+        <div class="map-section">
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="🔍 Konum ara (ör: İstanbul Üniversitesi, Kadıköy)">
+            </div>
+            
+            <div id="map"></div>
+            
+            <div class="map-controls">
+                <button class="map-btn" onclick="getCurrentLocation()" title="Konumum">📍</button>
+                <button class="map-btn" onclick="clearSelection()" title="Temizle">🗑️</button>
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Form -->
+        <div class="form-section">
+            <h2 class="form-title">Ödeme Noktası Bilgileri</h2>
+            
+            <div id="status-message" class="status-message status-warning">
+                Lütfen haritadan bir konum seçin
+            </div>
+
+            <!-- Seçilen Konum Bilgileri -->
+            <div id="location-info" class="location-info" style="display: none;">
+                <h4>📍 Seçilen Konum</h4>
+                <p id="selected-address">Adres: -</p>
+                <p id="selected-coords">Koordinatlar: -</p>
+            </div>
+
+            <form id="payment-point-form">
+                <!-- Temel Bilgiler -->
+                <div class="form-group">
+                    <label for="name">Ödeme Noktası Adı *</label>
+                    <input type="text" id="name" name="name" required 
+                           placeholder="ör: Merkez ATM, Üniversite Kantini">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Açıklama</label>
+                    <textarea id="description" name="description" rows="3"
+                              placeholder="Ödeme noktası hakkında detaylı bilgi..."></textarea>
+                </div>
+
+                <!-- Konum Bilgileri (Otomatik Doldurulacak) -->
+                <div class="coordinates">
+                    <div class="form-group">
+                        <label for="latitude">Enlem</label>
+                        <input type="text" id="latitude" name="latitude" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="longitude">Boylam</label>
+                        <input type="text" id="longitude" name="longitude" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Tam Adres</label>
+                    <input type="text" id="address" name="address" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="street">Sokak/Cadde</label>
+                    <input type="text" id="street" name="street">
+                </div>
+
+                <div class="coordinates">
+                    <div class="form-group">
+                        <label for="district">İlçe</label>
+                        <input type="text" id="district" name="district">
+                    </div>
+                    <div class="form-group">
+                        <label for="city">Şehir</label>
+                        <input type="text" id="city" name="city">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="postal-code">Posta Kodu</label>
+                    <input type="text" id="postal-code" name="postalCode">
+                </div>
+
+                <!-- İletişim Bilgileri -->
+                <div class="form-group">
+                    <label for="contact">İletişim Numarası</label>
+                    <input type="tel" id="contact" name="contact" 
+                           placeholder="+90 212 555 0123">
+                </div>
+
+                <!-- Çalışma Saatleri -->
+                <div class="form-group">
+                    <label>Çalışma Saatleri</label>
+                    <div class="working-hours">
+                        <div>
+                            <label for="start-time">Başlangıç</label>
+                            <input type="time" id="start-time" name="startTime" value="08:00">
+                        </div>
+                        <div>
+                            <label for="end-time">Bitiş</label>
+                            <input type="time" id="end-time" name="endTime" value="18:00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ödeme Yöntemleri -->
+                <div class="form-group">
+                    <label>Kabul Edilen Ödeme Yöntemleri</label>
+                    <div class="payment-methods">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="cash" name="paymentMethods" value="cash" checked>
+                            <label for="cash">💵 Nakit</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="credit-card" name="paymentMethods" value="credit-card" checked>
+                            <label for="credit-card">💳 Kredi Kartı</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="debit-card" name="paymentMethods" value="debit-card" checked>
+                            <label for="debit-card">💳 Banka Kartı</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="mobile-app" name="paymentMethods" value="mobile-app">
+                            <label for="mobile-app">📱 Mobil App</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="qr-code" name="paymentMethods" value="qr-code">
+                            <label for="qr-code">📱 QR Kod</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="contactless" name="paymentMethods" value="contactless">
+                            <label for="contactless">📡 Temassız</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Durum -->
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="active" name="active" checked>
+                        <label for="active">✅ Aktif</label>
+                    </div>
+                </div>
+
+                <button type="submit" id="save-btn" class="save-btn" disabled>
+                    💾 Ödeme Noktası Kaydet
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let selectedMarker;
+        let selectedLocation = null;
+        let geocoder;
+        let autocomplete;
+        let loadingTimeout;
+
+        // Durum yönetimi
+        let isLocationSelected = false;
+
+        console.log('🚀 Ödeme Noktası Ekleme Sistemi Başlatılıyor...');
+
+        // Loading timeout
+        loadingTimeout = setTimeout(function() {
+            if (document.getElementById('loading').style.display !== 'none') {
+                document.getElementById('loading').innerHTML = `
+                    <div class="spinner"></div>
+                    <div style="color: #e74c3c;">
+                        <h3>⚠️ Harita Yükleme Hatası</h3>
+                        <p>Google Maps API yüklenemedi.</p>
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Sayfayı Yenile
+                        </button>
+                    </div>
+                `;
+            }
+        }, 10000);
+
+        // Google Maps inicializasyonu
+        window.initMap = function() {
+            console.log('🗺️ Google Maps başlatılıyor...');
+            
+            try {
+                clearTimeout(loadingTimeout);
+                document.getElementById('loading').style.display = 'none';
+
+                // İstanbul merkezli harita
+                const istanbul = { lat: 41.0082, lng: 28.9784 };
+
+                const mapOptions = {
+                    zoom: 11,
+                    center: istanbul,
+                    mapTypeControl: true,
+                    mapTypeControlOptions: {
+                        style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+                        mapTypeIds: ["roadmap", "terrain", "satellite", "hybrid"]
+                    },
+                    streetViewControl: true,
+                    fullscreenControl: true,
+                    zoomControl: true,
+                    gestureHandling: 'greedy'
+                };
+
+                map = new google.maps.Map(document.getElementById("map"), mapOptions);
+                geocoder = new google.maps.Geocoder();
+
+                // Arama kutusu autocomplete
+                const searchInput = document.getElementById('search-input');
+                autocomplete = new google.maps.places.Autocomplete(searchInput, {
+                    types: ['establishment', 'geocode'],
+                    componentRestrictions: { country: 'TR' }
+                });
+
+                autocomplete.bindTo('bounds', map);
+
+                // Arama sonucu seçildiğinde
+                autocomplete.addListener('place_changed', function() {
+                    const place = autocomplete.getPlace();
+                    console.log('📍 Arama sonucu seçildi:', place.name);
+
+                    if (place.geometry) {
+                        map.setCenter(place.geometry.location);
+                        map.setZoom(16);
+                        selectLocation(place.geometry.location.lat(), place.geometry.location.lng());
+                    }
+                });
+
+                // Harita tıklama eventi
+                map.addListener("click", (event) => {
+                    console.log('🖱️ Harita tıklandı:', event.latLng.lat(), event.latLng.lng());
+                    selectLocation(event.latLng.lat(), event.latLng.lng());
+                });
+
+                console.log('✅ Google Maps başarıyla yüklendi');
+
+            } catch (error) {
+                console.error('❌ initMap hatası:', error);
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #e74c3c; text-align: center;">
+                        <h3>❌ Harita Başlatma Hatası</h3>
+                        <p>Hata: ${error.message}</p>
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Tekrar Dene
+                        </button>
+                    </div>
+                `;
+            }
+        };
+
+        // Konum seçimi fonksiyonu
+        function selectLocation(lat, lng) {
+            console.log('📍 Konum seçiliyor:', lat, lng);
+
+            try {
+                // Önceki marker'ı temizle
+                if (selectedMarker) {
+                    selectedMarker.setMap(null);
+                }
+
+                // Yeni marker ekle
+                selectedMarker = new google.maps.Marker({
+                    position: { lat: lat, lng: lng },
+                    map: map,
+                    title: "Seçilen Ödeme Noktası Konumu",
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="#28a745">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(40, 40),
+                        anchor: new google.maps.Point(20, 40)
+                    },
+                    animation: google.maps.Animation.DROP
+                });
+
+                selectedLocation = { lat: lat, lng: lng };
+                isLocationSelected = true;
+
+                // Form alanlarını güncelle
+                document.getElementById('latitude').value = lat.toFixed(6);
+                document.getElementById('longitude').value = lng.toFixed(6);
+
+                // Koordinat bilgilerini göster
+                document.getElementById('selected-coords').textContent = 
+                    `Koordinatlar: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+                // Status güncelle
+                updateStatus('Adres bilgisi alınıyor...', 'warning');
+
+                // Reverse geocoding ile adres bilgisi al
+                geocoder.geocode({ location: { lat: lat, lng: lng } }, (results, status) => {
+                    console.log('🏠 Geocoding sonucu:', status, results);
+
+                    if (status === "OK" && results[0]) {
+                        const result = results[0];
+                        const addressComponents = result.address_components;
+                        const formattedAddress = result.formatted_address;
+
+                        // Adres bileşenlerini parse et - Geliştirilmiş parsing
+                        let street = "";
+                        let district = "";
+                        let city = "";
+                        let postalCode = "";
+
+                        addressComponents.forEach(component => {
+                            const types = component.types;
+                            
+                            // Sokak/Cadde için
+                            if (types.includes('route')) {
+                                street = component.long_name;
+                            } else if (types.includes('street_number')) {
+                                street = component.long_name + " " + street;
+                            }
+                            
+                            // İlçe için - Daha kapsamlı kontrol
+                            else if (types.includes('administrative_area_level_2')) {
+                                district = component.long_name;
+                            } else if (types.includes('sublocality_level_1')) {
+                                district = component.long_name;
+                            } else if (types.includes('sublocality')) {
+                                district = component.long_name;
+                            } else if (types.includes('neighborhood')) {
+                                if (!district) district = component.long_name; // Sadece eğer henüz ilçe bulunmadıysa
+                            }
+                            
+                            // Şehir için
+                            else if (types.includes('administrative_area_level_1')) {
+                                city = component.long_name;
+                            } else if (types.includes('locality')) {
+                                if (!city) city = component.long_name;
+                            }
+                            
+                            // Posta kodu için
+                            else if (types.includes('postal_code')) {
+                                postalCode = component.long_name;
+                            }
+                        });
+
+                        console.log('📋 Parse edilen adres bileşenleri:', {
+                            street, district, city, postalCode
+                        });
+
+                        // Form alanlarını doldur
+                        document.getElementById('address').value = formattedAddress;
+                        document.getElementById('street').value = street || "";
+                        document.getElementById('district').value = district || "";
+                        document.getElementById('city').value = city || "";
+                        document.getElementById('postal-code').value = postalCode || "";
+
+                        // Konum bilgilerini göster
+                        document.getElementById('selected-address').textContent = 
+                            `Adres: ${formattedAddress}`;
+                        document.getElementById('location-info').style.display = 'block';
+
+                        // Kaydet butonunu aktif et
+                        document.getElementById('save-btn').disabled = false;
+
+                        updateStatus('✅ Konum seçildi! Ödeme noktası bilgilerini doldurun.', 'success');
+
+                        console.log('✅ Konum bilgileri başarıyla alındı ve form dolduruldu');
+
+                    } else {
+                        document.getElementById('address').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        document.getElementById('selected-address').textContent = 
+                            `Adres: Koordinat tabanlı (${lat.toFixed(6)}, ${lng.toFixed(6)})`;
+                        document.getElementById('location-info').style.display = 'block';
+                        document.getElementById('save-btn').disabled = false;
+
+                        updateStatus('⚠️ Adres bilgisi alınamadı, sadece koordinatlar kullanılacak.', 'warning');
+                    }
+                });
+
+            } catch (error) {
+                console.error('❌ selectLocation hatası:', error);
+                updateStatus('❌ Konum seçme hatası: ' + error.message, 'error');
+            }
+        }
+
+        // Kullanıcının mevcut konumunu al
+        function getCurrentLocation() {
+            console.log('📱 Mevcut konum isteniyor...');
+
+            if (navigator.geolocation) {
+                updateStatus('Konumunuz alınıyor...', 'warning');
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+
+                        console.log('📍 Mevcut konum alındı:', lat, lng);
+
+                        map.setCenter({ lat: lat, lng: lng });
+                        map.setZoom(16);
+                        selectLocation(lat, lng);
+                    },
+                    (error) => {
+                        console.error('❌ Konum hatası:', error);
+                        updateStatus('❌ Konum alınamadı: ' + error.message, 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 300000
+                    }
+                );
+            } else {
+                updateStatus('❌ Tarayıcınız konum servislerini desteklemiyor.', 'error');
+            }
+        }
+
+        // Seçimi temizle
+        function clearSelection() {
+            console.log('🗑️ Seçim temizleniyor...');
+
+            if (selectedMarker) {
+                selectedMarker.setMap(null);
+                selectedMarker = null;
+            }
+
+            selectedLocation = null;
+            isLocationSelected = false;
+
+            // Form alanlarını temizle
+            document.getElementById('latitude').value = '';
+            document.getElementById('longitude').value = '';
+            document.getElementById('address').value = '';
+            document.getElementById('street').value = '';
+            document.getElementById('district').value = '';
+            document.getElementById('city').value = '';
+            document.getElementById('postal-code').value = '';
+
+            // Arama kutusunu temizle
+            document.getElementById('search-input').value = '';
+
+            // Konum bilgilerini gizle
+            document.getElementById('location-info').style.display = 'none';
+
+            // Kaydet butonunu pasif et
+            document.getElementById('save-btn').disabled = true;
+
+            updateStatus('Lütfen haritadan bir konum seçin', 'warning');
+
+            console.log('✅ Seçim başarıyla temizlendi');
+        }
+
+        // Status güncelleme
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('status-message');
+            statusElement.textContent = message;
+            statusElement.className = `status-message status-${type}`;
+        }
+
+        // Form gönderimi
+        document.getElementById('payment-point-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!isLocationSelected) {
+                updateStatus('❌ Lütfen önce haritadan bir konum seçin!', 'error');
+                return;
+            }
+
+            const formData = new FormData(this);
+            const paymentPointData = Object.fromEntries(formData.entries());
+
+            // Ödeme yöntemlerini array olarak topla
+            const paymentMethods = [];
+            document.querySelectorAll('input[name="paymentMethods"]:checked').forEach(checkbox => {
+                paymentMethods.push(checkbox.value);
+            });
+
+            paymentPointData.paymentMethods = paymentMethods;
+            paymentPointData.latitude = parseFloat(paymentPointData.latitude);
+            paymentPointData.longitude = parseFloat(paymentPointData.longitude);
+            paymentPointData.active = document.getElementById('active').checked;
+            paymentPointData.timestamp = new Date().toISOString();
+
+            // Form validation
+            const validationErrors = validateForm(paymentPointData);
+            if (validationErrors.length > 0) {
+                updateStatus('❌ Form hataları:\n• ' + validationErrors.join('\n• '), 'error');
+                return;
+            }
+
+            console.log('💾 Ödeme noktası kaydediliyor:', paymentPointData);
+
+            // JavaFX uygulaması için JSON dosyasına kaydet
+            saveToJavaFXApp(paymentPointData);
+        });
+
+        // JavaFX uygulamasına veri gönder - Geliştirilmiş versiyon
+        async function saveToJavaFXApp(data) {
+            updateStatus('💾 Ödeme noktası kaydediliyor...', 'warning');
+
+            try {
+                // 1. Önce backend API'ye gönder
+                const backendSuccess = await sendToBackendAPI(data);
+                
+                // 2. Sonra mevcut JSON dosyasını oku ve yeni veriyi ekle
+                await saveToSingleJSONFile(data);
+
+                if (backendSuccess) {
+                    updateStatus('✅ Ödeme noktası başarıyla kaydedildi! Backend ve JSON dosyası güncellendi.', 'success');
+                } else {
+                    updateStatus('⚠️ JSON dosyası kaydedildi, ancak backend bağlantısında sorun oldu.', 'warning');
+                }
+
+                // 3 saniye sonra formu temizleme seçeneği sun
+                setTimeout(() => {
+                    if (confirm('Yeni ödeme noktası eklemek için formu temizlemek ister misiniz?')) {
+                        clearSelection();
+                        document.getElementById('payment-point-form').reset();
+                        
+                        // Varsayılan değerleri geri yükle
+                        document.getElementById('start-time').value = '08:00';
+                        document.getElementById('end-time').value = '18:00';
+                        document.getElementById('active').checked = true;
+                        document.getElementById('cash').checked = true;
+                        document.getElementById('credit-card').checked = true;
+                        document.getElementById('debit-card').checked = true;
+                    }
+                }, 3000);
+
+            } catch (error) {
+                console.error('❌ Kaydetme hatası:', error);
+                updateStatus('❌ Kaydetme hatası: ' + error.message, 'error');
+            }
+        }
+
+        // Backend API'ye ödeme noktası gönder
+        async function sendToBackendAPI(data) {
+            console.log('🌐 Backend API\'ye ödeme noktası gönderiliyor...');
+            
+            try {
+                // Gerekli alanların kontrolü
+                if (!data.name || !data.latitude || !data.longitude) {
+                    throw new Error('Ad, enlem ve boylam alanları zorunludur!');
+                }
+
+                // Backend API formatına uygun veri hazırla
+                const backendData = {
+                    name: data.name,
+                    location: {
+                        latitude: data.latitude,
+                        longitude: data.longitude
+                    },
+                    address: {
+                        street: data.street || "",
+                        district: data.district || "",
+                        city: data.city || "",
+                        postalCode: data.postalCode || ""
+                    },
+                    contactNumber: data.contact || "",
+                    workingHours: `${data.startTime || '09:00'} - ${data.endTime || '18:00'}`,
+                    paymentMethods: data.paymentMethods && data.paymentMethods.length > 0 ? 
+                        data.paymentMethods.map(method => method.toUpperCase().replace('-', '_')) : 
+                        ["CASH"],
+                    description: data.description || "",
+                    active: data.active !== false
+                };
+
+                console.log('📤 Backend\'e gönderilecek veri:', JSON.stringify(backendData, null, 2));
+
+                const response = await fetch('http://localhost:8080/v1/api/payment-point', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(backendData)
+                });
+
+                console.log('📊 Backend API yanıt kodu:', response.status);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Backend API başarılı yanıt:', result);
+                    updateStatus('✅ Ödeme noktası backend\'e başarıyla kaydedildi!', 'success');
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Backend API hatası:', response.status, errorText);
+                    
+                    // Kullanıcıya anlamlı hata mesajı göster
+                    if (response.status === 401) {
+                        updateStatus('❌ Yetkilendirme hatası! Token süresi dolmuş olabilir.', 'error');
+                    } else if (response.status === 400) {
+                        updateStatus('❌ Veri formatı hatası! Lütfen tüm alanları doğru doldurun.', 'error');
+                    } else if (response.status === 500) {
+                        updateStatus('❌ Server hatası! Backend servisi çalışmıyor olabilir.', 'error');
+                    } else {
+                        updateStatus(`❌ Backend hatası (${response.status}): ${errorText}`, 'error');
+                    }
+                    return false;
+                }
+
+            } catch (error) {
+                console.error('❌ Backend API bağlantı hatası:', error);
+                updateStatus('❌ Backend bağlantı hatası: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Tek JSON dosyasına kaydet (mevcut verilerin üzerine ekle)
+        async function saveToSingleJSONFile(newData) {
+            console.log('📄 Tek JSON dosyasına kaydediliyor...');
+            
+            try {
+                // Mevcut verileri localStorage'dan al
+                let existingData = [];
+                const storedData = localStorage.getItem('bincard_payment_points');
+                if (storedData) {
+                    existingData = JSON.parse(storedData);
+                }
+
+                // Yeni veriyi ekle
+                newData.id = Date.now(); // Benzersiz ID
+                existingData.push(newData);
+
+                // localStorage'a kaydet
+                localStorage.setItem('bincard_payment_points', JSON.stringify(existingData));
+
+                // JSON dosyasını Downloads klasörüne SABİT İSİMLE kaydet
+                const jsonStr = JSON.stringify(existingData, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bincard_payment_point_data.json'; // SABİT DOSYA ADI
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                console.log('✅ JSON dosyası başarıyla güncellendi. Dosya adı: bincard_payment_point_data.json');
+                console.log('📊 Toplam ödeme noktası:', existingData.length);
+
+            } catch (error) {
+                console.error('❌ JSON dosyası kaydetme hatası:', error);
+                throw error;
+            }
+        }
+
+        // Google Maps yükleme hatası
+        window.gm_authFailure = function() {
+            console.error('❌ Google Maps API kimlik doğrulama hatası');
+            document.getElementById('loading').innerHTML = `
+                <div style="color: #e74c3c; text-align: center;">
+                    <h3>🔑 API Kimlik Doğrulama Hatası</h3>
+                    <p>Google Maps API anahtarı geçersiz veya kotası dolmuş olabilir.</p>
+                    <button onclick="location.reload()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        🔄 Tekrar Dene
+                    </button>
+                </div>
+            `;
+        };
+
+        // Sayfa yüklendiğinde
+        window.addEventListener('load', function() {
+            console.log('📄 Sayfa yüklendi, Google Maps bekleniyor...');
+        });
+
+        // Google Maps API'sini yükle
+        function loadGoogleMaps() {
+            console.log('🌐 Google Maps API yükleniyor...');
+
+            // UYARI: API Key geçersiz olabilir - Test için geçici olarak kapatıldı
+            const GOOGLE_MAPS_API_KEY = 'INVALID_KEY_FOR_TESTING';
+            const FIREBASE_PROJECT_ID = 'bincard-9a335';
+
+            console.log('🔑 Firebase Project:', FIREBASE_PROJECT_ID);
+            console.log('⚠️ TEST MODU: Google Maps API Key geçici olarak devre dışı');
+            console.log('🗺️ Maps API Key (geçersiz):', GOOGLE_MAPS_API_KEY);
+
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap&v=3.55&region=TR&language=tr`;
+            script.async = true;
+            script.defer = true;
+            script.onerror = function() {
+                console.error('❌ Google Maps API yüklenemedi');
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #e74c3c; text-align: center;">
+                        <h3>🌐 Google Maps API Hatası</h3>
+                        <p>Firebase Service Account ile Maps API'sine erişilemiyor.</p>
+                        <p>Project ID: ${FIREBASE_PROJECT_ID}</p>
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Tekrar Dene
+                        </button>
+                    </div>
+                `;
+            };
+            document.head.appendChild(script);
+        }
+
+        // Sayfa hazır olduğunda Google Maps'i yükle
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadGoogleMaps);
+        } else {
+            loadGoogleMaps();
+        }
+
+        // JavaFX uygulamasından token oku
+        async function getAuthToken() {
+            try {
+                // Önce localStorage'dan dene
+                const localToken = localStorage.getItem('bincard_auth_token');
+                if (localToken) {
+                    console.log('🔑 Token localStorage\'dan okundu');
+                    return localToken;
+                }
+
+                // Sonra Downloads klasöründeki dosyadan oku (fetch file:// protokolü çalışmayabilir)
+                // Alternatif: FileReader API kullan veya JavaFX'den localStorage'a kaydet
+                console.warn('⚠️ Token bulunamadı, varsayılan token kullanılıyor');
+                return 'dummy-token';
+                
+            } catch (error) {
+                console.error('❌ Token okuma hatası:', error);
+                return 'dummy-token';
+            }
+        }
+
+        // Form validation fonksiyonu
+        function validateForm(data) {
+            const errors = [];
+            
+            if (!data.name || data.name.trim().length < 3) {
+                errors.push('Ödeme noktası adı en az 3 karakter olmalıdır');
+            }
+            
+            if (!data.latitude || !data.longitude) {
+                errors.push('Haritadan konum seçimi yapılmalıdır');
+            }
+            
+            if (!data.contact || data.contact.trim().length < 10) {
+                errors.push('İletişim numarası en az 10 karakter olmalıdır');
+            }
+            
+            if (!data.paymentMethods || data.paymentMethods.length === 0) {
+                errors.push('En az bir ödeme yöntemi seçilmelidir');
+            }
+            
+            return errors;
+        }
+    </script>
+</body>
+</html>

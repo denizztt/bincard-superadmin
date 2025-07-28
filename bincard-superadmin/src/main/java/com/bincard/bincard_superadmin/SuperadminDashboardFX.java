@@ -110,6 +110,13 @@ public class SuperadminDashboardFX {
         busesMenu.addSubItem(new MenuItem("Otobüs Düzenle", accentColor1, FontAwesomeSolid.EDIT, "BusEdit"));
         busesMenu.addSubItem(new MenuItem("Otobüs Sil", accentColor1, FontAwesomeSolid.TRASH_ALT, "BusDelete"));
         
+        // Duraklar menüsü
+        MenuItem stationsMenu = new MenuItem("Duraklar", accentColor3, FontAwesomeSolid.MAP_MARKER_ALT);
+        stationsMenu.addSubItem(new MenuItem("Durak Ekle", accentColor3, FontAwesomeSolid.PLUS_CIRCLE, "StationAdd"));
+        stationsMenu.addSubItem(new MenuItem("Durakları Görüntüle", accentColor3, FontAwesomeSolid.LIST, "StationsList"));
+        stationsMenu.addSubItem(new MenuItem("Durak Haritası", accentColor3, FontAwesomeSolid.MAP, "StationsMap"));
+        stationsMenu.addSubItem(new MenuItem("Durak Arama", accentColor3, FontAwesomeSolid.SEARCH, "StationSearch"));
+        
         // Raporlar menüsü
         MenuItem reportsMenu = new MenuItem("Raporlar", accentColor2, FontAwesomeSolid.FILE_ALT);
         reportsMenu.addSubItem(new MenuItem("Gelir Raporları", accentColor2, FontAwesomeSolid.CHART_LINE, "IncomeReports"));
@@ -143,7 +150,7 @@ public class SuperadminDashboardFX {
         menuItems.add(approvals);  // Admin Onayları
         menuItems.add(auditLogs);  // Denetim Kayıtları
         menuItems.add(walletsMenu); // Cüzdanlar
-        menuItems.add(stopsMenu);  // Duraklar
+        menuItems.add(stationsMenu);  // Duraklar
         menuItems.add(feedbackMenu); // Geri Bildirimler
         menuItems.add(newsMenu);   // Haberler
         menuItems.add(stats);      // İstatistikler
@@ -994,6 +1001,20 @@ public class SuperadminDashboardFX {
                     break;
                 case "PaymentPointAdd":
                     new PaymentPointAddPage(stage, accessToken, refreshToken);
+                    break;
+                    
+                // Durak sayfaları
+                case "StationAdd":
+                    new StationAddPage(stage, accessToken, refreshToken);
+                    break;
+                case "StationsList":
+                    new StationsListPage(stage, accessToken, refreshToken);
+                    break;
+                case "StationsMap":
+                    new StationsMapPage(stage, accessToken, refreshToken);
+                    break;
+                case "StationSearch":
+                    new StationSearchPage(stage, accessToken, refreshToken);
                     break;
                     
                 // Cüzdan sayfaları

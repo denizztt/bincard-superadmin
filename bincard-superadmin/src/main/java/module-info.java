@@ -1,12 +1,12 @@
 module com.bincard.bincard_superadmin {
-    // JavaFX core modules
-    requires transitive javafx.base;
-    requires transitive javafx.controls;
-    requires transitive javafx.fxml;
-    requires transitive javafx.web;
-    requires transitive javafx.graphics;
-    requires transitive javafx.swing;
-    requires transitive javafx.media;
+    // JavaFX core modules - require sadece, transitive'siz
+    requires javafx.base;
+    requires javafx.controls;
+    requires javafx.fxml;
+    requires javafx.web;
+    requires javafx.graphics;
+    requires javafx.swing;
+    requires javafx.media;
     
     // Java standard modules
     requires java.desktop;
@@ -14,7 +14,7 @@ module com.bincard.bincard_superadmin {
     requires jdk.jsobject;
     requires java.net.http;
     
-    // Third-party libraries (only those with proper modules)
+    // Third-party libraries
     requires org.controlsfx.controls;
     requires com.dlsc.formsfx;
     requires net.synedra.validatorfx;
@@ -24,10 +24,10 @@ module com.bincard.bincard_superadmin {
     requires com.almasb.fxgl.all;
     
     // FontAwesome için gerekli modüller
-    requires transitive org.kordamp.ikonli.fontawesome5;
-    requires transitive org.kordamp.ikonli.core;
+    requires org.kordamp.ikonli.fontawesome5;
+    requires org.kordamp.ikonli.core;
 
-    // Opens and exports
+    // Opens ve exports
     opens com.bincard.bincard_superadmin to javafx.fxml, javafx.web;
     opens com.bincard.bincard_superadmin.model to javafx.fxml;
     

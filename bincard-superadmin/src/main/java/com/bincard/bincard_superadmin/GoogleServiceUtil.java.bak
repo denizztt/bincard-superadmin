@@ -1,0 +1,132 @@
+package com.bincard.bincard_superadmin;
+
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+/**
+ * Google servisleri ile entegrasyon için utility class
+ * Firebase service account credentials kullanarak Google Maps API ve diğer servislere erişim sağlar
+ */
+public class GoogleServiceUtil {
+    
+    private static final String SERVICE_ACCOUNT_PATH = "firebase-account-service.json";
+    private static final String GOOGLE_MAPS_API_KEY = "AIzaSyBRYfrvFsxgARSM_iE7JA1EHu1nSpaWAxc";
+    
+    private static GoogleCredentials credentials;
+    
+    /**
+     * Firebase service account credentials'ını yükler
+     */
+    public static GoogleCredentials getCredentials() {
+        if (credentials == null) {
+            try {
+                // Service account dosyasını oku
+                Path credentialsPath = Paths.get(SERVICE_ACCOUNT_PATH);
+                
+                if (!Files.exists(credentialsPath)) {
+                    System.err.println("❌ Firebase service account dosyası bulunamadı: " + credentialsPath);
+                    return null;
+                }
+                
+                FileInputStream serviceAccount = new FileInputStream(credentialsPath.toFile());
+                credentials = ServiceAccountCredentials.fromStream(serviceAccount);
+                
+                System.out.println("✅ Firebase credentials başarıyla yüklendi");
+                
+            } catch (IOException e) {
+                System.err.println("❌ Firebase credentials yükleme hatası: " + e.getMessage());
+                return null;
+            }
+        }
+        
+        return credentials;
+    }
+    
+    /**
+     * Google Maps API key'ini döner
+     */
+    public static String getGoogleMapsApiKey() {
+        return GOOGLE_MAPS_API_KEY;
+    }
+    
+    /**
+     * Geocoding API için URL oluşturur
+     */
+    public static String buildGeocodingUrl(double lat, double lng) {
+        return String.format(
+            "https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&key=%s&language=tr&region=TR",
+            lat, lng, GOOGLE_MAPS_API_KEY
+        );
+    }
+    
+    /**
+     * Places API için URL oluşturur  
+     */
+    public static String buildPlacesSearchUrl(String query) {
+        return String.format(
+            "https://maps.googleapis.com/maps/api/place/textsearch/json?query=%s&key=%s&language=tr&region=TR",
+            query.replace(" ", "+"), GOOGLE_MAPS_API_KEY
+        );
+    }
+    
+    /**
+     * Directions API için URL oluşturur
+     */
+    public static String buildDirectionsUrl(String origin, String destination) {
+        return String.format(
+            "https://maps.googleapis.com/maps/api/directions/json?origin=%s&destination=%s&key=%s&language=tr&region=TR",
+            origin.replace(" ", "+"), destination.replace(" ", "+"), GOOGLE_MAPS_API_KEY
+        );
+    }
+    
+    /**
+     * Distance Matrix API için URL oluşturur
+     */
+    public static String buildDistanceMatrixUrl(String origins, String destinations) {
+        return String.format(
+            "https://maps.googleapis.com/maps/api/distancematrix/json?origins=%s&destinations=%s&key=%s&language=tr&region=TR",
+            origins.replace(" ", "+"), destinations.replace(" ", "+"), GOOGLE_MAPS_API_KEY
+        );
+    }
+    
+    /**
+     * Static Maps API için URL oluşturur
+     */
+    public static String buildStaticMapUrl(double lat, double lng, int zoom, int width, int height) {
+        return String.format(
+            "https://maps.googleapis.com/maps/api/staticmap?center=%f,%f&zoom=%d&size=%dx%d&markers=color:red|%f,%f&key=%s",
+            lat, lng, zoom, width, height, lat, lng, GOOGLE_MAPS_API_KEY
+        );
+    }
+    
+    /**
+     * Firebase project ID'sini döner
+     */
+    public static String getFirebaseProjectId() {
+        return "bincard-9a335";
+    }
+    
+    /**
+     * Test metodu - credentials'ların doğru yüklenip yüklenmediğini kontrol eder
+     */
+    public static boolean testCredentials() {
+        try {
+            GoogleCredentials creds = getCredentials();
+            if (creds != null) {
+                System.out.println("✅ Google Service credentials test başarılı");
+                System.out.println("📋 Project ID: " + getFirebaseProjectId());
+                System.out.println("🗺️ Maps API Key: " + GOOGLE_MAPS_API_KEY.substring(0, 20) + "...");
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            System.err.println("❌ Google Service credentials test hatası: " + e.getMessage());
+            return false;
+        }
+    }
+}

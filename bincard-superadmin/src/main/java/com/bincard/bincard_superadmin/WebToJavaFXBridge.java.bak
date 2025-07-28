@@ -1,0 +1,274 @@
+package com.bincard.bincard_superadmin;
+
+import javafx.application.Platform;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+
+/**
+ * Web form'dan JavaFX'e veri aktarımı için utility class
+ * HTML sayfalarından gelen form verilerini otomatik olarak JavaFX panellerine aktarır
+ */
+public class WebToJavaFXBridge {
+    
+    private static final String DATA_FILE_NAME = "bincard_payment_point_data.json";
+    private static final String DOWNLOADS_FOLDER = System.getProperty("user.home") + "/Downloads";
+    private static final Path DATA_FILE_PATH = Paths.get(DOWNLOADS_FOLDER, DATA_FILE_NAME);
+    
+    private static WatchService watchService;
+    private static boolean isWatching = false;
+    private static Consumer<PaymentPointData> dataCallback;
+    
+    /**
+     * Web form'dan gelen veri modeli
+     */
+    public static class PaymentPointData {
+        public String name;
+        public String description;
+        public double latitude;
+        public double longitude;
+        public String address;
+        public String street;
+        public String district;
+        public String city;
+        public String postalCode;
+        public String contact;
+        public String startTime;
+        public String endTime;
+        public String[] paymentMethods;
+        public boolean active;
+        public String timestamp;
+        public long id;
+        
+        @Override
+        public String toString() {
+            return String.format("PaymentPointData{name='%s', lat=%f, lng=%f, address='%s'}", 
+                               name, latitude, longitude, address);
+        }
+    }
+    
+    /**
+     * Web form'dan gelen verileri dinlemeye başlar
+     * @param callback Yeni veri geldiğinde çağrılacak callback fonksiyonu
+     */
+    public static void startWatching(Consumer<PaymentPointData> callback) {
+        if (isWatching) {
+            System.out.println("⚠️ Zaten web verilerini dinliyoruz");
+            return;
+        }
+        
+        dataCallback = callback;
+        
+        CompletableFuture.runAsync(() -> {
+            try {
+                watchService = Paths.get(DOWNLOADS_FOLDER).getFileSystem().newWatchService();
+                Paths.get(DOWNLOADS_FOLDER).register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+                
+                isWatching = true;
+                System.out.println("👀 Web form verileri dinleniyor: " + DATA_FILE_PATH);
+                
+                while (isWatching) {
+                    WatchKey key = watchService.take();
+                    
+                    for (WatchEvent<?> event : key.pollEvents()) {
+                        if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+                            Path fileName = (Path) event.context();
+                            
+                            if (fileName.toString().equals(DATA_FILE_NAME)) {
+                                System.out.println("📥 Web form verisi algılandı: " + fileName);
+                                
+                                // Kısa bir gecikme - dosya yazımının tamamlanması için
+                                Thread.sleep(1000);
+                                
+                                processNewWebData();
+                            }
+                        }
+                    }
+                    
+                    key.reset();
+                }
+                
+            } catch (Exception e) {
+                System.err.println("❌ Web veri dinleme hatası: " + e.getMessage());
+                isWatching = false;
+            }
+        });
+    }
+    
+    /**
+     * Web form veri dinlemeyi durdurur
+     */
+    public static void stopWatching() {
+        isWatching = false;
+        if (watchService != null) {
+            try {
+                watchService.close();
+                System.out.println("🛑 Web veri dinleme durduruldu");
+            } catch (IOException e) {
+                System.err.println("❌ Watch service kapatma hatası: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Yeni web verilerini işler
+     */
+    private static void processNewWebData() {
+        try {
+            if (!Files.exists(DATA_FILE_PATH)) {
+                System.out.println("⚠️ Veri dosyası bulunamadı: " + DATA_FILE_PATH);
+                return;
+            }
+            
+            String jsonContent = Files.readString(DATA_FILE_PATH);
+            Gson gson = new Gson();
+            
+            // JSON array olarak parse et
+            PaymentPointData[] dataArray = gson.fromJson(jsonContent, PaymentPointData[].class);
+            
+            if (dataArray != null && dataArray.length > 0) {
+                // En son eklenen veriyi al (en yüksek ID'li)
+                PaymentPointData latestData = dataArray[0];
+                for (PaymentPointData data : dataArray) {
+                    if (data.id > latestData.id) {
+                        latestData = data;
+                    }
+                }
+                
+                System.out.println("🆕 Yeni web verisi işleniyor: " + latestData);
+                
+                // UI thread'de callback'i çağır
+                if (dataCallback != null) {
+                    Platform.runLater(() -> {
+                        try {
+                            dataCallback.accept(latestData);
+                            System.out.println("✅ Web verisi JavaFX'e aktarıldı");
+                        } catch (Exception e) {
+                            System.err.println("❌ Callback hatası: " + e.getMessage());
+                        }
+                    });
+                }
+            }
+            
+        } catch (JsonSyntaxException e) {
+            System.err.println("❌ JSON parse hatası: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("❌ Dosya okuma hatası: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Web veri işleme hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Mevcut web verilerini manuel olarak kontrol et
+     */
+    public static PaymentPointData[] readExistingWebData() {
+        try {
+            if (!Files.exists(DATA_FILE_PATH)) {
+                System.out.println("📄 Henüz web verisi yok: " + DATA_FILE_PATH);
+                return new PaymentPointData[0];
+            }
+            
+            String jsonContent = Files.readString(DATA_FILE_PATH);
+            Gson gson = new Gson();
+            
+            PaymentPointData[] dataArray = gson.fromJson(jsonContent, PaymentPointData[].class);
+            
+            System.out.println("📊 Mevcut web verisi sayısı: " + (dataArray != null ? dataArray.length : 0));
+            
+            return dataArray != null ? dataArray : new PaymentPointData[0];
+            
+        } catch (Exception e) {
+            System.err.println("❌ Mevcut web verisi okuma hatası: " + e.getMessage());
+            return new PaymentPointData[0];
+        }
+    }
+    
+    /**
+     * Token dosyasını oluşturur (web sayfası için)
+     */
+    public static void createTokenFile(TokenDTO accessToken) {
+        try {
+            String userHome = System.getProperty("user.home");
+            Path tokenPath = Paths.get(userHome, "token_temp.txt");
+            
+            if (accessToken != null && accessToken.getToken() != null) {
+                Files.write(tokenPath, accessToken.getToken().getBytes());
+                System.out.println("🔑 Token dosyası oluşturuldu: " + tokenPath);
+            } else {
+                Files.write(tokenPath, "dummy-token".getBytes());
+                System.out.println("⚠️ Geçersiz token, dummy token yazıldı: " + tokenPath);
+            }
+            
+        } catch (IOException e) {
+            System.err.println("❌ Token dosyası oluşturma hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Web sayfası için token injection script'ini günceller
+     */
+    public static void updateTokenScript(TokenDTO accessToken) {
+        try {
+            Path scriptPath = Paths.get("token_inject.js");
+            
+            String scriptContent = String.format(
+                """
+                // Token injection script - JavaFX tarafından güncellenmiş
+                console.log('🔑 Token injection script yüklendi (JavaFX güncellemesi)');
+                
+                // Global token değişkeni
+                let token = '%s';
+                
+                // Firebase konfigürasyonu
+                window.FIREBASE_CONFIG = {
+                    projectId: 'bincard-9a335',
+                    apiKey: 'AIzaSyBRYfrvFsxgARSM_iE7JA1EHu1nSpaWAxc',
+                    serviceAccount: 'firebase-adminsdk-fbsvc@bincard-9a335.iam.gserviceaccount.com'
+                };
+                
+                // Token'ı localStorage'a kaydet
+                localStorage.setItem('bincard_auth_token', token);
+                
+                // Global değişkenler
+                window.authToken = token;
+                window.API_BASE_URL = 'http://localhost:8080/v1/api';
+                window.GOOGLE_MAPS_API_KEY = 'AIzaSyBRYfrvFsxgARSM_iE7JA1EHu1nSpaWAxc';
+                
+                console.log('✅ JavaFX token güncellendi:', token.substring(0, 20) + '...');
+                """, 
+                accessToken != null ? accessToken.getToken() : "dummy-token"
+            );
+            
+            Files.write(scriptPath, scriptContent.getBytes());
+            System.out.println("🔄 Token script güncellendi: " + scriptPath);
+            
+        } catch (IOException e) {
+            System.err.println("❌ Token script güncelleme hatası: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Test metodu - bridge'in çalışıp çalışmadığını kontrol eder
+     */
+    public static void testBridge() {
+        System.out.println("🧪 Web-JavaFX Bridge testi başlıyor...");
+        System.out.println("📁 Veri dosyası yolu: " + DATA_FILE_PATH);
+        System.out.println("📂 Downloads klasörü: " + DOWNLOADS_FOLDER);
+        
+        PaymentPointData[] existingData = readExistingWebData();
+        System.out.println("📊 Mevcut veri sayısı: " + existingData.length);
+        
+        System.out.println("✅ Bridge test tamamlandı");
+    }
+}

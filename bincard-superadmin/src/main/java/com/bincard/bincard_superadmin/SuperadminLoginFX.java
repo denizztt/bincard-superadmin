@@ -58,13 +58,13 @@ public class SuperadminLoginFX {
         // Ana container
         VBox mainContainer = new VBox(20);
         mainContainer.setAlignment(Pos.CENTER);
-        mainContainer.setStyle("-fx-background-color: linear-gradient(to bottom right, #6A4C93 0%, #A8A8A8 100%);");
+        mainContainer.setStyle("-fx-background-color: #f8f9fa;");
         mainContainer.setPadding(new Insets(40));
 
         // Merhaba ve saat üstte
         Label welcomeLabel = new Label("Merhaba 👋");
         welcomeLabel.setFont(Font.font("Montserrat", FontWeight.BOLD, 28));
-        welcomeLabel.setTextFill(Color.web("#FFFFFF"));
+        welcomeLabel.setTextFill(Color.web("#2c3e50"));
         welcomeLabel.setAlignment(Pos.CENTER);
         welcomeLabel.setStyle("-fx-padding: 0 0 0 0;");
 
